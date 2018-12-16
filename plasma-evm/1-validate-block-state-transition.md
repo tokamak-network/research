@@ -1,11 +1,10 @@
 ---
 id: 1
+author: Carl Park
 title: Validate State Transition
 status: Draft
 created: 2018-11-26
 ---
-
-# Abstract
 
 TrueBit verification game provides the way of validating state transition function using solevm on ethereum. So when a malicious block is committed to the root chain, the computational result should be verified, meanning that the EVM is correctly executed. When we consider validity of state transition function by block, the game is played as follow.
 
@@ -30,20 +29,3 @@ TrueBit verification game provides the way of validating state transition functi
 10. Otherwise, challenger's deposit is burn. We can give a reward to operator (not user who commit URB) according to economic paper.
 
 Above process can verify the state transition function of _block_.
-
-# Implementations
-
-### SolEVM
-
--   SLAOD / SSTORE
--   CALL / DELEGATECALL
--   CODESIZE, EXTCODE, ...
-
-### Verifier Contract
-
--   session manager
-
-### Client
-
--   fraud detector
--   verification game processor

@@ -10,21 +10,21 @@ created: 2018-12-16
 
 _User-activated fork_ (UAF) makes sure that users can protect assets when operator withholds blocks. When user prepare _User-submitted request epoch_ (URE) and submit _user-submitted block_ (URB) based on last finalized block, the canonical chain is forked to new chain from the last finalized block. In the new chain, all epochs after finalized epoch (epoch whose last block is finalized) should be rebased (like git but the commit sequence is not same) to the new fork.
 
-When child chain is forkd, epochs are rebased as this sequence.
-`last finalized epoch - URE - not finalized ORE's - not finalized NREs`
+When child chain is forkd, **3** new epochs are placed as this sequence.
+`last finalized epoch - URE - not finalized ORE' - not finalized NRE'`
 Users can protect their asset unless withheld NRBs are not finalized. Exit requests for ORB are not rebased into the new fork to prevent them from being challenged because exit requests for URB MUST be created in case of operator's block withholding attack.
 
 Users who want to exit should recreate exit request if child chain is forked.
 
 # User-activated Fork
 
-User can create and submit URB, which is more expensive than ORB, to fork child chain due to **some** reason. User have to prepare URE before submit URB. In the prepare step, the RootChain contract emits `EpochPrepared(bool isRequest, bool userActivated, uint requestStart, uint requestEnd)` event. `requestStart` is the first id of ERU (exit request and undo request for URB) to be applied, and `first id = last id of previous URE if there was fork else 0`.
+User can create and submit URB, which is more expensive than ORB, to fork child chain if he is willing to. User have to prepare URE before submit URB. In the prepare step, the RootChain contract emits `EpochPrepared(bool isRequest, bool userActivated, uint requestStart, uint requestEnd)` event. `requestStart` is the first id of ERU (exit request and undo request for URB) to be applied, and `first id = last id of previous URE if there was fork else 0`.
 
 We can say an ERU is valid if 1) it is exit request and exit request transaction is not reverted or 2) it is undo request and the corresponding enter request is not applied yet in child chain.
 
 When URE is prepared, anyone can submit URBs to fill the epoch with bond as Ether.
 
-After URE, OREs _without exit requests_ are placed because exit request may not be valid after URE. User who want to exit have to make an exit request for URB if he notices BWA. If he think operator is honest, he should make another exit request for ORB.
+After URE, two epochs, ORE' _without exit requests_ and NRE', are placed. ORE' is a single epoch that covers all ORE in previous chain and so is NRE'. Because previous exit requests for ORB may not be valid after URE, they should not be included in ORE', but user can exit in URB by creating exit request for URB (ERU). User who want to exit have to make an exit request for URB if he notices BWA. If he think operator is honest, he will make another exit request for ORB.
 
 # Undo Request
 
@@ -117,18 +117,18 @@ contract SampleRequestableContract {
 
 UAF requires child chain to be rebased as follow.
 
-`last finalized epoch - URE - not finalized ORE's - not finalized NREs`
+`last finalized epoch - URE - not finalized ORE' - not finalized NRE`
 
 If user create and submit another URB before previous URB is finalized, next chain is rebased based on `not finalized ORE's`. Any user can submit `ORB's` to the RootChain. ORB' submiter may be incentivised from the URB submit cost. But details will be covered from Plasma EVM economic paper.
 
-| Action              | Valid canonical chain                                                              |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| Initial State       | Finalized Block#1 - ORB#2 - NRB#3 - ORB#4                                          |
-| UAF 1               | Block#1 - **URB#2 - ORB#2' - ORB#4'** - NRB#3'                                     |
-| extend forked chain | Block#1 - URB#2 - ORB#2' - ORB#4' - **NRB#3' - ORB#6 - NRB#7 - ORB#8**             |
-| UAF 2               | Block#1 - URB#2 - ORB#2' - ORB#4' - **URB#5 - ORB#6' - ORB#8'** - NRB#3'' - NRB#7' |
+| Action              | Valid canonical chain                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Initial State       | Finalized Block#1 - ORB#2 - NRB#3 - ORB#4 - NRB#5 - ...                     |
+| UAF 1               | Block#1 - **URB#2 - ORB'#3 - NRB'#4**                                       |
+| extend forked chain | Block#1 - URB#2 - ORB'#3 - NRB'#4 - **ORB#5 - NRB#6 - ORB#7 - NRB#8** - ... |
+| UAF 2               | Block#1 - URB#2 - ORB'#3 - **URB#4 - ORB'#5 - NRB'#6**                      |
 
-The validity of resubmitted URB and ORB' following the URB can be checked by verification game.
+Resubmitted URB and ORB' following the URB can be verified by verification game.
 
 # Computation Challenge and Renew
 

@@ -10,7 +10,7 @@ created: 2018-12-16
 
 _User-activated fork_ (UAF) makes sure that users can protect assets when operator withholds blocks. When user prepare _User-submitted request epoch_ (URE) and submit _user-submitted block_ (URB) based on last finalized block, the canonical chain is forked to new chain from the last finalized block. In the new chain, all epochs after finalized epoch (epoch whose last block is finalized) should be rebased (like git but the commit sequence is not same) to the new fork.
 
-When child chain is forkd, **3** new epochs are placed as this sequence.
+When child chain is forked, **3** new epochs are placed as this sequence.
 `last finalized epoch - URE - not finalized ORE' - not finalized NRE'`
 Users can protect their asset unless withheld NRBs are not finalized. Exit requests for ORB are not rebased into the new fork to prevent them from being challenged because exit requests for URB MUST be created in case of operator's block withholding attack.
 

@@ -117,7 +117,7 @@ contract SampleRequestableContract {
 
 UAF requires child chain to be rebased as follow.
 
-`last finalized epoch - URE - not finalized ORE' - not finalized NRE`
+`last finalized epoch - URE - not finalized ORE' - not finalized NRE'`
 
 If user create and submit another URB before previous URB is finalized, next chain is rebased based on `not finalized ORE's`. Any user can submit `ORB's` to the RootChain. ORB' submiter may be incentivised from the URB submit cost. But details will be covered from Plasma EVM economic paper.
 
@@ -136,4 +136,4 @@ Any computation challenge requires all blocks after the challenged block to be r
 
 If operator-submitetd block is challenged, we can even halt the chain and disincentivize her, but details will be covered from the economic paper. But in most case, she will withhold the block rather than broadcast invalid block.
 
-If user-submitted block is challenged, other user can challenge on the block becuase user-submitted block data are available to anyone. We can disincentivize submiter and renew the blcok with the data based on challenger.
+If user-submitted block is challenged, other user can challenge on the block becuase user-submitted block data are available to anyone. We can disincentivize submiter and renew the block with the data based on challenger.

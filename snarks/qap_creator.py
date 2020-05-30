@@ -38,16 +38,19 @@ def eval_poly(poly, x):
 
 # Make a polynomial which is zero at {1, 2 ... total_pts}, except
 # for `point_loc` where the value is `height`
+# j번째 라그랑주 L_j(x) 다항식 계산 함수
 def mk_singleton(point_loc, height, total_pts):
     fac = 1
+    # 라그랑주의 (x_j,y_j)중, x_j는 1,2,3 ... 으로 1부터 하나씩 커지고 있고, y_j값은 함수 파라미터로부터 받아옴
     for i in range(1, total_pts + 1):
         if i != point_loc:
             fac *= point_loc - i
-            print(point_loc, i, fac)
+    # L_j의 분모(fac, x_j-x_(j-1)와 계수(y_i) 계산
     o = [height * 1.0 / fac]
-    print(o)
+    # L_j의 분자(x-x_j ... ) 계산
     for i in range(1, total_pts + 1):
         if i != point_loc:
+            # (x-x_0)(x-x_1) ... (x-x_(j-1))(x_x_(j+1))..(x-x_k) <- 라그랑주 분자 계산
             o = multiply_polys(o, [-i, 1])
     return o
 
@@ -55,7 +58,9 @@ def mk_singleton(point_loc, height, total_pts):
 # expresses result as [deg 0 coeff, deg 1 coeff...]
 def lagrange_interp(vec):
     o = []
+    # 라그랑주의 x값을 1,2,3 ... 으로 씀
     for i in range(len(vec)):
+        # 각각의 라그랑주를 더함
         o = add_polys(o, mk_singleton(i + 1, vec[i], len(vec)))
     for i in range(len(vec)):
         assert abs(eval_poly(o, i + 1) - vec[i] < 10**-10), \
@@ -68,28 +73,35 @@ def transpose(matrix):
 # A, B, C = matrices of m vectors of length n, where for each
 # 0 <= i < m, we want to satisfy A[i] * B[i] - C[i] = 0
 def r1cs_to_qap(A, B, C):
+    # A, B, C 매트릭스의 각 row를 라그랑주 보간법 수행
     A, B, C = transpose(A), transpose(B), transpose(C)
     new_A = [lagrange_interp(a) for a in A]
     new_B = [lagrange_interp(b) for b in B]
     new_C = [lagrange_interp(c) for c in C]
+    # (x-1)(x-2)(x-3)..(x-k) 다항식 계산(Z)
     Z = [1]
     for i in range(1, len(A[0]) + 1):
         Z = multiply_polys(Z, [-i, 1])
     return (new_A, new_B, new_C, Z)
 
 def create_solution_polynomials(r, new_A, new_B, new_C):
+    # Calculate A(x)
     Apoly = []
     for rval, a in zip(r, new_A):
         Apoly = add_polys(Apoly, multiply_polys([rval], a))
+    # Calcualte B(x)
     Bpoly = []
     for rval, b in zip(r, new_B):
         Bpoly = add_polys(Bpoly, multiply_polys([rval], b))
+    # Calculate C(x)
     Cpoly = []
     for rval, c in zip(r, new_C):
         Cpoly = add_polys(Cpoly, multiply_polys([rval], c))
+    # o = A(x)*B(x)-C(x)
     o = subtract_polys(multiply_polys(Apoly, Bpoly), Cpoly)
     for i in range(1, len(new_A[0]) + 1):
         assert abs(eval_poly(o, i)) < 10**-10, (eval_poly(o, i), i)
+    # Return A(x), B(x), C(x), A(x)*B(x)-C(x)
     return Apoly, Bpoly, Cpoly, o
 
 def create_divisor_polynomial(sol, Z):
@@ -122,21 +134,18 @@ for x in Cp: print(x)
 print('Z')
 print(Z)
 Apoly, Bpoly, Cpoly, sol = create_solution_polynomials(r, Ap, Bp, Cp)
-print('Apoly')
+print('Apoly(A(x))')
 print(Apoly)
-print('Bpoly')
+print('Bpoly(B(x))')
 print(Bpoly)
-print('Cpoly')
+print('Cpoly(C(x))')
 print(Cpoly)
-print('Sol')
+print('Sol(A(x)*B(x)-C(x))')
 print(sol)
-print('Z cofactor')
+print('Z cofactor, H')
+# A(x)*B(x)-C(x) = H*Z
+# <==>
+# (A(x)*B(x)-C(x)) / Z = H
+# <==>
+# (A(x)*B(x)-C(x)) / (x-1)(x-2)(x-3)..(x-k) = H
 print(create_divisor_polynomial(sol, Z))
-
-# print("A[0] : ", A[0])
-# print()
-# print("A[0][0].mkSingleton() : ", mk_singleton(1, A[0][0], len(A[0])))
-# print()
-# print("A[0][1].mkSingleton() : ", mk_singleton(2, A[0][1], len(A[0])))
-# print()
-# print("A[0][1].mkSingleton() : ", mk_singleton(3, A[0][2], len(A[0])))

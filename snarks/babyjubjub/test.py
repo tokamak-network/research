@@ -1,5 +1,7 @@
 from point import Point
 from field import FQ
+from field import FQ2, FQ12
+from field import field_properties
 
 def encryption_test():
     # K = k*G (pubKey: K, signKey : k, generator : G)
@@ -46,4 +48,19 @@ def encryption_test():
     decrypted_M = C1 - (C2*k); # M = C1 - k*C2
     print("Decrypted Message : {}".format(decrypted_M.y))
 
-encryption_test()
+def field_test():
+    field_modulus = field_properties["bn128"]["field_modulus"]
+    x = FQ2([1, 0])
+    f = FQ2([1, 2])
+    fpx = FQ2([2, 2])
+    one = FQ2.one()
+    z1, z2 = FQ2([-1, -1]).coeffs
+
+    print("x + f == fpx                         -->", x + f == fpx)
+    # print("f / f == one", f / f == one)
+    # assert one / f + x / f == (one + x) / f
+    print("one * f + x * f == (one + x) * f     -->", one * f + x * f == (one + x) * f)
+    print("x ** (field_modulus ** 2 - 1) == one -->", x ** (field_modulus ** 2 - 1) == one)
+
+# encryption_test()
+field_test()

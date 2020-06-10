@@ -7,7 +7,9 @@ All changes from our side are denoted with #CHANGE.
 
 from __future__ import absolute_import
 
-from typing import cast, List, Tuple, Sequence, Union
+from typing import cast, List, Tuple, Sequence, Union, TypeVar, Type
+
+import time
 
 
 # The prime modulus of the field
@@ -30,10 +32,11 @@ field_properties = {
     },
 }   # type: Field_Properties
 
-# See, it's prime!
-assert pow(2, field_modulus, field_modulus) == 2
-
-IntOrFQ = Union[int, "FQ"]
+T_FQ = TypeVar('T_FQ', bound="FQ")
+T_FQP = TypeVar('T_FQP', bound="FQP")
+T_FQ2 = TypeVar('T_FQ2', bound="FQ2")
+T_FQ12 = TypeVar('T_FQ12', bound="FQ12")
+IntOrFQ = Union[int, T_FQ]
 
 # The modulus of the polynomial in this representation of FQ12
 # FQ12_MODULUS_COEFFS = (82, 0, 0, 0, 0, 0, -18, 0, 0, 0, 0, 0)  # Implied + [1]
@@ -42,12 +45,14 @@ IntOrFQ = Union[int, "FQ"]
 
 # Extended euclidean algorithm to find modular inverses for
 # integers
-def inv(a: int, n: int) -> int:
+def prime_field_inv(a: int, n: int) -> int:
+    """
+    Extended euclidean algorithm to find modular inverses for integers
+    """
     if a == 0:
         return 0
     lm, hm = 1, 0
-    num = a if isinstance(a, int) else a.n
-    low, high = num % n, n
+    low, high = a % n, n
     while low > 1:
         r = high // low
         nm, new = hm - lm * r, high - low * r
@@ -58,12 +63,7 @@ def inv(a: int, n: int) -> int:
 # Utility methods for polynomial math
 def deg(p: Sequence[Union[int, "FQ"]]) -> int:
     d = len(p) - 1
-    print("start : ", p)
     while p[d] == 0 and d:
-        print("")
-        print("d    : ", d)
-        print("p    : ", p)
-        print("p[d] : ", p[d])
         d -= 1
     return d
 
@@ -80,97 +80,166 @@ def poly_rounded_div(a: Sequence[IntOrFQ],
             temp[c + i] -= o[c]
     return cast(Tuple[IntOrFQ, ...], tuple(o[:deg(o) + 1]))
 
-
-
 # A class for field elements in FQ. Wrap a number in this class,
 # and it becomes a field element.
 class FQ(object):
+    """
+    A class for field elements in FQ. Wrap a number in this class,
+    and it becomes a field element.
+    """
     n = None  # type: int
+    field_modulus = field_properties["bn128"]["field_modulus"]
 
-    def __init__(self, val: IntOrFQ) -> None:
+    def __init__(self: T_FQ, val: IntOrFQ) -> None:
+        if self.field_modulus is None:
+            raise AttributeError("Field Modulus hasn't been specified")
+
         if isinstance(val, FQ):
             self.n = val.n
+        elif isinstance(val, int):
+            self.n = val % self.field_modulus
         else:
-            self.n = val % field_modulus
-        assert isinstance(self.n, int)
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(val))
+            )
 
-    def __add__(self, other: IntOrFQ) -> "FQ":
-        on = other.n if isinstance(other, FQ) else other
-        return FQ((self.n + on) % field_modulus)
+    def __add__(self: T_FQ, other: IntOrFQ) -> T_FQ:
+        if isinstance(other, FQ):
+            on = other.n
+        elif isinstance(other, int):
+            on = other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
 
-    def __mul__(self, other: IntOrFQ) -> "FQ":
-        on = other.n if isinstance(other, FQ) else other
-        return FQ((self.n * on) % field_modulus)
+        return type(self)((self.n + on) % self.field_modulus)
 
-    def __rmul__(self, other: IntOrFQ) -> "FQ":
+    def __mul__(self: T_FQ, other: IntOrFQ) -> T_FQ:
+        if isinstance(other, FQ):
+            on = other.n
+        elif isinstance(other, int):
+            on = other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
+
+        return type(self)((self.n * on) % self.field_modulus)
+
+    def __rmul__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         return self * other
 
-    def __radd__(self, other: IntOrFQ) -> "FQ":
+    def __radd__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         return self + other
 
-    def __rsub__(self, other: IntOrFQ) -> "FQ":
-        on = other.n if isinstance(other, FQ) else other
-        return FQ((on - self.n) % field_modulus)
+    def __rsub__(self: T_FQ, other: IntOrFQ) -> T_FQ:
+        if isinstance(other, FQ):
+            on = other.n
+        elif isinstance(other, int):
+            on = other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
 
-    def __sub__(self, other: IntOrFQ) -> "FQ":
-        on = other.n if isinstance(other, FQ) else other
-        return FQ((self.n - on) % field_modulus)
+        return type(self)((on - self.n) % self.field_modulus)
 
-    def __div__(self, other: IntOrFQ) -> "FQ":
-        on = other.n if isinstance(other, FQ) else other
-        assert isinstance(on, int)
-        return FQ(self.n * inv(on, field_modulus) % field_modulus)
+    def __sub__(self: T_FQ, other: IntOrFQ) -> T_FQ:
+        if isinstance(other, FQ):
+            on = other.n
+        elif isinstance(other, int):
+            on = other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
 
-    def __truediv__(self, other: IntOrFQ) -> "FQ":
+        return type(self)((self.n - on) % self.field_modulus)
+
+    def __div__(self: T_FQ, other: IntOrFQ) -> T_FQ:
+        if isinstance(other, FQ):
+            on = other.n
+        elif isinstance(other, int):
+            on = other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
+
+        return type(self)(
+            self.n * prime_field_inv(on, self.field_modulus) % self.field_modulus
+        )
+
+    def __truediv__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         return self.__div__(other)
 
-    def __rdiv__(self, other: IntOrFQ) -> "FQ":
-        on = other.n if isinstance(other, FQ) else other
-        assert isinstance(on, int), on
-        return FQ(inv(self.n, field_modulus) * on % field_modulus)
+    def __rdiv__(self: T_FQ, other: IntOrFQ) -> T_FQ:
+        if isinstance(other, FQ):
+            on = other.n
+        elif isinstance(other, int):
+            on = other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
 
-    def __rtruediv__(self, other: IntOrFQ) -> "FQ":
+        return type(self)(
+            prime_field_inv(self.n, self.field_modulus) * on % self.field_modulus
+        )
+
+    def __rtruediv__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         return self.__rdiv__(other)
 
-    def __pow__(self, other: int) -> "FQ":
+    def __pow__(self: T_FQ, other: int) -> T_FQ:
         if other == 0:
-            return FQ(1)
+            return type(self)(1)
         elif other == 1:
-            return FQ(self.n)
+            return type(self)(self.n)
         elif other % 2 == 0:
             return (self * self) ** (other // 2)
         else:
             return ((self * self) ** int(other // 2)) * self
 
-    def __eq__(
-        self, other: IntOrFQ
-    ) -> bool:  # type:ignore # https://github.com/python/mypy/issues/2783 # noqa: E501
+    def __eq__(self: T_FQ, other: IntOrFQ) -> bool:
         if isinstance(other, FQ):
             return self.n == other.n
-        else:
+        elif isinstance(other, int):
             return self.n == other
+        else:
+            raise TypeError(
+                "Expected an int or FQ object, but got object of type {}"
+                .format(type(other))
+            )
 
-    def __ne__(
-        self, other: IntOrFQ
-    ) -> bool:  # type:ignore # https://github.com/python/mypy/issues/2783 # noqa: E501
+    def __ne__(self: T_FQ, other: IntOrFQ) -> bool:
         return not self == other
 
-    def __neg__(self) -> "FQ":
-        return FQ(-self.n)
+    def __neg__(self: T_FQ) -> T_FQ:
+        return type(self)(-self.n)
 
-    def __repr__(self) -> str:
+    def __repr__(self: T_FQ) -> str:
         return repr(self.n)
 
-    def __int__(self) -> int:
+    def __int__(self: T_FQ) -> int:
         return self.n
 
     @classmethod
-    def one(cls) -> "FQ":
+    def one(cls: Type[T_FQ]) -> T_FQ:
         return cls(1)
 
     @classmethod
-    def zero(cls) -> "FQ":
+    def zero(cls: Type[T_FQ]) -> T_FQ:
         return cls(0)
+
+int_types_or_FQ = (int, FQ)
 
 
 class FQP(object):
@@ -178,73 +247,87 @@ class FQP(object):
     A class for elements in polynomial extension fields
     """
     degree = 0
-    field_modulus = None
+    field_modulus = None  # type: int
 
-    # coeffs는 배열, 각 coeffs는 FQ타입이어야 함
-    # modulus_coeffs또한 배열, 또한 모두 FQ타입이여야 함, 다만 modulus_coeffs는 체의 스펙에 따라 모두 상수로 이미 결정되어 있음
-    # https://github.com/ethereum/py_ecc/blob/master/py_ecc/fields/field_properties.py#L23-L34
-    # TODO : coeffs, modulus_coeffs --> type checking구현 필요
-    def __init__(self, coeffs, modulus_coeffs = ()):
+    def __init__(self,
+                 coeffs: Sequence[IntOrFQ],
+                 modulus_coeffs: Sequence[IntOrFQ] = ()) -> None:
         if self.field_modulus is None:
-            raise Exception("Error")
+            raise AttributeError("Field Modulus hasn't been specified")
+
         if len(coeffs) != len(modulus_coeffs):
-            raise Exception("Error")
+            raise Exception(
+                "coeffs and modulus_coeffs aren't of the same length"
+            )
+        # Encoding all coefficients in the corresponding type FQ
+        self.FQP_corresponding_FQ_class = type(
+            "FQP_corresponding_FQ_class",
+            (FQ,),
+            {'field_modulus': self.field_modulus}
+        )  # type: Type[FQ]
+        self.coeffs = tuple(
+            self.FQP_corresponding_FQ_class(c) for c in coeffs
+        )  # type: Tuple[IntOrFQ, ...]
+        # The coefficients of the modulus, without the leading [1]
+        self.modulus_coeffs = tuple(modulus_coeffs)  # type: Tuple[IntOrFQ, ...]
+        # The degree of the extension field
+        self.degree = len(self.modulus_coeffs)
 
-        self.coeffs = tuple(coeffs)
-        self.modulus_coeffs = tuple(modulus_coeffs)
+    def __add__(self: T_FQP, other: T_FQP) -> T_FQP:
+        if not isinstance(other, type(self)):
+            raise TypeError(
+                "Expected an FQP object, but got object of type {}"
+                .format(type(other))
+            )
 
-        # modulus coeffs의 크기가 degree(차원)이 됨
-        self.degree = len(modulus_coeffs)
-
-    # 다항식의 덧샘
-    def __add__(self, other):
         return type(self)([x + y for x, y in zip(self.coeffs, other.coeffs)])
 
-    # 다항식의 뺄셈
-    def __sub__(self, other):
+    def __sub__(self: T_FQP, other: T_FQP) -> T_FQP:
+        if not isinstance(other, type(self)):
+            raise TypeError(
+                "Expected an FQP object, but got object of type {}"
+                .format(type(other))
+            )
+
         return type(self)([x - y for x, y in zip(self.coeffs, other.coeffs)])
 
-    # 다항식의 곱셈
-    def __mul__(self, other):
-        # TODO : other 타잎이 확대체, 체, 인트 배열인지 확인하고 타입 전환
-        if isinstance(other, FQP):
-            b = [FQ(0) for i in range(self.degree * 2 - 1)]
+    def __mul__(self: T_FQP, other: Union[int, T_FQ, T_FQP]) -> T_FQP:
+        if isinstance(other, int_types_or_FQ):
+            return type(self)([c * other for c in self.coeffs])
+        elif isinstance(other, FQP):
+            b = [self.FQP_corresponding_FQ_class(0) for i in range(self.degree * 2 - 1)]
             for i in range(self.degree):
                 for j in range(self.degree):
                     b[i + j] += self.coeffs[i] * other.coeffs[j]
-
-            # GF내에서 다항식의 곱의 결과로 나오는 출력다항식의 최고차수 (len(b))는
-            # 기약다항식의 최고차수 (self.degree)보다 커서는 안됩니다.
-            # 예로, 코드의 init을보면 타켓다항식의 degree와 기약다항식의 degree를 비교하여
-            # 예외처리를 해주는 조건문이 하나 있네요.
-            # 그리고 이러한 이유 때문에, 언급하신 252~255 라인이 사용되는 것 같네요.
-            # 아래의 라인은 다음의 링크에 나오는 중학교 다항식의 나눗셈 방법을 그대로 구현한것입니다.
-            # (https://mathbang.net/313)
             while len(b) > self.degree:
                 exp, top = len(b) - self.degree - 1, b.pop()
                 for i in range(self.degree):
-                    b[exp + i] -= top * FQ(self.modulus_coeffs[i])
-
+                    b[exp + i] -= top * self.FQP_corresponding_FQ_class(self.modulus_coeffs[i])
             return type(self)(b)
+        else:
+            raise TypeError(
+                "Expected an int or FQ object or FQP object, but got object of type {}"
+                .format(type(other))
+            )
 
-    def __rmul__(self, other):
+    def __rmul__(self: T_FQP, other: Union[int, T_FQP]) -> T_FQP:
         return self * other
 
-    def __div__(self, other):
-        if isinstance(other, FQ):
-            return FQP([c / other for c in self.coeffs], self.modulus_coeffs)
-        if isinstance(other, FQP):
-            # TODO : FQP.inv() should be implemented
+    def __div__(self: T_FQP, other: Union[int, T_FQP]) -> T_FQP:
+        if isinstance(other, int_types_or_FQ):
+            return type(self)([c / other for c in self.coeffs])
+        elif isinstance(other, FQP):
             return self * other.inv()
         else:
             raise TypeError(
                 "Expected an int or FQ object or FQP object, but got object of type {}"
                 .format(type(other))
             )
-    def __truediv__(self, other):
+
+    def __truediv__(self: T_FQP, other: Union[int, T_FQP]) -> T_FQP:
         return self.__div__(other)
 
-    def __pow__(self, other):
+    def __pow__(self: T_FQP, other: int) -> T_FQP:
         if other == 0:
             return type(self)([1] + [0] * (self.degree - 1))
         elif other == 1:
@@ -254,17 +337,17 @@ class FQP(object):
         else:
             return ((self * self) ** int(other // 2)) * self
 
-    def inv(self):
+    # Extended euclidean algorithm used to find the modular inverse
+    def inv(self: T_FQP) -> T_FQP:
         lm, hm = (
             [1] + [0] * self.degree,
-            [0] * (self.degree +1),
+            [0] * (self.degree + 1),
         )
-
         low, high = (
-            list(self.coeffs + (0,)),
-            list(self.modulus_coeffs + (1,))
+            # Ignore mypy yelling about the inner types for  the tuples being incompatible
+            cast(List[IntOrFQ], list(self.coeffs + (0,))),
+            cast(List[IntOrFQ], list(self.modulus_coeffs + (1,))),
         )
-
         while deg(low):
             r = cast(List[IntOrFQ], list(poly_rounded_div(high, low)))
             r += [0] * (self.degree + 1 - len(r))
@@ -289,27 +372,35 @@ class FQP(object):
                     nm[i + j] -= lm[i] * int(r[j])
                     new[i + j] -= low[i] * int(r[j])
             lm, low, hm, high = nm, new, lm, low
-
         return type(self)(lm[:self.degree]) / low[0]
 
-    def __repr__(self):
+    def __repr__(self: T_FQP) -> str:
         return repr(self.coeffs)
 
-    def __eq__(self, other):
+    def __eq__(self: T_FQP, other: T_FQP) -> bool:     # type: ignore # https://github.com/python/mypy/issues/2783 # noqa: E501
+        if not isinstance(other, type(self)):
+            raise TypeError(
+                "Expected an FQP object, but got object of type {}"
+                .format(type(other))
+            )
+
         for c1, c2 in zip(self.coeffs, other.coeffs):
             if c1 != c2:
                 return False
         return True
 
-    def __neg__(self):
+    def __ne__(self: T_FQP, other: T_FQP) -> bool:     # type: ignore # https://github.com/python/mypy/issues/2783 # noqa: E501
+        return not self == other
+
+    def __neg__(self: T_FQP) -> T_FQP:
         return type(self)([-c for c in self.coeffs])
 
     @classmethod
-    def one(cls):
-        return cls([1] + [0] * (cls.degree-1))
+    def one(cls: Type[T_FQP]) -> T_FQP:
+        return cls([1] + [0] * (cls.degree - 1))
 
     @classmethod
-    def zero(cls):
+    def zero(cls: Type[T_FQP]) -> T_FQP:
         return cls([0] * cls.degree)
 
 

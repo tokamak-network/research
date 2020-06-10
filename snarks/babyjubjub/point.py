@@ -7,7 +7,7 @@ based on: https://github.com/HarryR/ethsnarks
 """
 
 from collections import namedtuple
-from field import FQ, inv, field_modulus
+from field import FQ, prime_field_inv, field_modulus
 from numbertheory import square_root_mod_prime, SquareRootError
 
 # order of the field
@@ -105,7 +105,7 @@ class Point(namedtuple("_Point", ("x", "y"))):
         assert isinstance(x, FQ)
         xsq = x * x
         ax2 = JUBJUB_A * xsq
-        dxsqm1 = inv(JUBJUB_D * xsq - 1, JUBJUB_Q)
+        dxsqm1 = prime_field_inv(JUBJUB_D * xsq - 1, JUBJUB_Q)
         ysq = dxsqm1 * (ax2 - 1)
         y = FQ(square_root_mod_prime(int(ysq), JUBJUB_Q))
         return cls(x, y)

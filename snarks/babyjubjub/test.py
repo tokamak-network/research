@@ -62,11 +62,11 @@ def field_test():
     print("one * f + x * f == (one + x) * f     -->", one * f + x * f == (one + x) * f)
     print("x ** (field_modulus ** 2 - 1) == one -->", x ** (field_modulus ** 2 - 1) == one)
     if isinstance(z1, int):
-        print("z1 > 0 --> ", z1 > 0)
-        print("z2 > 0 --> ", z2 > 0)
+        print("z1 > 0                               --> ", z1 > 0)
+        print("z2 > 0                               --> ", z2 > 0)
     else:
-        print("z1.n > 0 -->", z1.n > 0)
-        print("z2.n > 0 -->", z2.n > 0)
+        print("z1.n > 0                             -->", z1.n > 0)
+        print("z2.n > 0                             -->", z2.n > 0)
 
 # encryption_test()
 field_test()

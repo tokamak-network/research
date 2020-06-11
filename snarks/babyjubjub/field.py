@@ -6,10 +6,7 @@ All changes from our side are denoted with #CHANGE.
 """
 
 from __future__ import absolute_import
-
 from typing import cast, List, Tuple, Sequence, Union, TypeVar, Type
-
-import time
 
 
 # The prime modulus of the field

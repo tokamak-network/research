@@ -1,3 +1,5 @@
+# https://github.com/ethereum/py_ecc
+
 from field import FQ, FQP, FQ2, FQ12, field_properties
 
 from typing import (
@@ -82,6 +84,7 @@ def double(pt: Point2D[Field]) -> Point2D[Field]:
 
 
 # Elliptic curve addition
+# https://en.wikipedia.org/wiki/Elliptic_curve#The_group_law
 def add(p1: Point2D[Field],
         p2: Point2D[Field]) -> Point2D[Field]:
     if p1 is None or p2 is None:

@@ -1,5 +1,11 @@
 # https://github.com/ethereum/py_ecc
-
+# 현재 7월 2일까지 총 세개의 파워포인트를 작성하였습니다. 5월 22일 발표자료, 6월 12일 발표자료, 6월 26일 발표자료를 각각 발표자료 1, 2, 3이라 칭하겠습니다.
+ 
+# FQ, FQ2, FQ12는 각각 prime field, twisted field, extended field에서 정의된 Elliptic Curve(EC)의 좌표를 표현하기위한 자료형입니다.
+# FQ는 prime field를 표현하며, (x,y)의 형태로 정의됩니다. 여기서 x와 y는 prime number q보다 작고 0보다 큰 정수입니다.
+# FQ12는 FQ를 embedding degree 12로 확장한 extension field를 표현하며, (X,Y)의 형태로 정의됩니다. 여기서 X와 Y는 각각 길이 12의 배열이고, 배열의 모든 원소는 0보다 크고 q보다 작은 정수입니다. [발표자료 3의 24슬라이드에 FQ->FQ2의 field extension의 예시가 있음]
+# FQ2는 FQ12에서 정의된 좌표들을 degree 6으로 twist한 후 생겨나는 twisted 좌표를 정의할 quadratic field를 표현하며, (A,B)의 형태로 정의됩니다. 여기서 A와 B는 각각 길이 2의 배열이고, 배열의 모든 원소는 0보다 크고 q보다 작은 정수입니다. [발표자료 3의 31슬라이드에 FQ2->FQ의 twisting의 예시가 있음]
+# FQP는 FQ와 같은 prime field이지만, polynomial 연산을 구현하기위해 FQ와 구분해놓은것입니다. pairing에서는 사용되지 않습니다.
 from field import FQ, FQP, FQ2, FQ12, field_properties
 
 from typing import (
@@ -18,6 +24,7 @@ from bn128_curve import (
     b,
     b2,
     curve_order,
+    # G1은 elliptic curve의 모든 좌표들이 원소인 "커브 그룹"의 generator입니다. generator를 n번 multiply 함으로써 모든 원소를 다 만들어낼 수 있습니다 (1<=n<=r, 여기서 r은 group order).
     G1,
 )
 

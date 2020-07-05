@@ -1,8 +1,3 @@
-%% Code written by Jehyuk Jang
-% Last updated on 6th July
-% INFONET Lab., GIST, Republic of Korea
-% Contact: jjh2014@gist.ac.kr
-
 clear
 %% System Params
 q=41;

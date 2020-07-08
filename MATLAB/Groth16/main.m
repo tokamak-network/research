@@ -1,26 +1,51 @@
+%% Code written by Jehyuk Jang
+% Last updated on 6th July
+% INFONET Lab., GIST, Republic of Korea
+% Contact: jjh2014@gist.ac.kr
+
 clear
 %% System Params
-q=41;
-% Elliptic curve: y^2=x^3+a*x+b
-a=0;
-b=1;
-Points=EC_points(a,b,q);
-PwOrders=[Points zeros(size(Points,1),1)];
-for i=1:size(Points,1)
-    PwOrders(i,3)=EC_order(Points(i,:),a,q);
+p=19;
+q=19^2-1;
+k=2;
+% Elliptic curve: y^2=x^3+a*x+0
+a=1;
+b=0;
+
+Curve=struct();
+Curve.q=p;
+Curve.k=1;
+Curve.a=a;
+Curve.b=b;
+Curve.x=0;
+Curve.y=0;
+Curve.order=0;
+Curve.gen=Curve;
+
+Group1=EC_points(Curve);
+Group2=EC_extend(Group1);
+Orders=zeros(1,length(Group1));
+for i=1:length(Group1)
+    Orders(i)=Group1(i).order;
 end
 % n is order of EC curve group
-[n, ind]=max(PwOrders(:,3));
+[n, ind]=max(Orders);
 % g is a generator of EC curve group
-g=PwOrders(ind,[1,2]);
+g=Group1(ind);
 % h is a generator of twisted curve group
-h=g;
-
-En=zeros(n-1,2);
-En(1,:)=g;
-for i=2:n-1
-    En(i,:)=EC_add(En(i-1,:),g,a,q);
+h=Group2(ind);
+g=rmfield(g,'gen');
+h=rmfield(h,'gen');
+for i=1:length(Group1)
+    Group1(i).gen=g;
+    Group2(i).gen=h;
 end
+
+% En=zeros(n-1,2);
+% En(1,:)=g;
+% for i=2:n-1
+%     En(i,:)=EC_add(En(i-1,:),g,a,q);
+% end
 
 %% From function to R1CS
 
@@ -127,6 +152,10 @@ alpha=1+randi(q-2);
 beta=1+randi(q-2);
 gamma=1+randi(q-2);
 delta=1+randi(q-2);
+% alpha=4;
+% beta=9;
+% gamma=3;
+% delta=5;
 x_val=1;
 check=1:d;
 while ismember(x_val,check)
@@ -139,61 +168,105 @@ Cx_val=rmod(double(subs(Cx,x,x_val)),q);
 Zx_val=rmod(double(subs(Zx,x,x_val)),q);
 Hx_val=rmod(double(subs(Hx,x,x_val)),q);
 
-sigma1_1=[EC_pmult(alpha,g,a,q);
-    EC_pmult(beta,g,a,q);
-    EC_pmult(delta,g,a,q)];
-sigma1_2=zeros(NumGates,2);
+if mod(R*Ax_val*R*Bx_val-R*Cx_val,q)==mod(Zx_val*Hx_val,q)
+    disp('Verifiable1')
+else
+    disp('Polys are not good')
+end
+
+sigma1_1=[EC_pmult(alpha,g);
+    EC_pmult(beta,g);
+    EC_pmult(delta,g)];
+sigma1_2(NumGates)=g;
 for i=0:NumGates-1
     val=mod(x_val^i,q);
-    sigma1_2(i+1,:)=EC_pmult(val,g,a,q);
+    sigma1_2(i+1)=EC_pmult(val,g);
 end
-sigma1_3=zeros(numel(Ind_IO),2);
+sigma1_3(numel(Ind_IO))=g;
+VAL=zeros(1,numel(Ind_IO));
 for i=Ind_IO
-    val=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(gamma,q),q);
-    sigma1_3(i,:)=EC_pmult(val,g,a,q);
+    VAL(i)=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(gamma,q),q);
+    sigma1_3(i)=EC_pmult(VAL(i),g);
 end
-sigma1_4=zeros(NumWires,2);
+sigma1_4(NumWires)=g;
 for i=Ind_mid
     val=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(delta,q),q);
-    sigma1_4(i,:)=EC_pmult(val,g,a,q);
+    sigma1_4(i)=EC_pmult(val,g);
 end
-sigma1_5=zeros(NumGates-1,2);
+sigma1_5(NumGates-1)=g;
 for i=0:NumGates-2
     val=mod(x_val^i*MODinv(delta,q),q);
-    sigma1_5(i+1,:)=EC_pmult(val,g,a,q);
+    sigma1_5(i+1)=EC_pmult(val,g);
 end
-sigma2_1=[EC_pmult(beta,h,a,q);
-    EC_pmult(gamma,h,a,q);
-    EC_pmult(delta,h,a,q)];
-sigma2_2=zeros(NumGates,2);
+sigma2_1=[EC_pmult(beta,h);
+    EC_pmult(gamma,h);
+    EC_pmult(delta,h)];
+sigma2_2(NumGates)=h;
 for i=0:NumGates-1
     val=mod(x_val^i,q);
-    sigma2_2(i+1,:)=EC_pmult(val,h,a,q);
+    sigma2_2(i+1)=EC_pmult(val,h);
 end
 
 %% Prove
 % r and s are secret
 r=randi(q-1);
 s=randi(q-1);
+% r=2;
+% s=1;
 
-A=mod(alpha+R(Ind_IO)*Ax_val(Ind_IO)+r*delta,q);
-B=mod(beta+R(Ind_IO)*Bx_val(Ind_IO)+s*delta,q);
+A=mod(alpha+R*Ax_val+r*delta,q);
+B=mod(beta+R*Bx_val+s*delta,q);
 C=mod(MODinv(delta,q)*(R(Ind_mid)*(beta*Ax_val(Ind_mid)+alpha*Bx_val(Ind_mid)+Cx_val(Ind_mid))+Hx_val*Zx_val)...
-    +A*s+B*r-r*s*delta,q);
+    +A*s+B*r+mod(-r*s*delta,q),q);
 % proof is denoted as pi in Groth16
-proof=[EC_pmult(A,g,a,q);
-    EC_pmult(C,g,a,q);
-    EC_pmult(B,h,a,q)];
+proof=[EC_pmult(A,g);
+    EC_pmult(C,g);
+    EC_pmult(B,h)];
+disp('Proof is ready')
+lhs=mod(A*B,q);
+rhs=0;
+rhs=mod(rhs+alpha*beta,q);
+rhs=mod(rhs+R(Ind_IO)*VAL.'*gamma,q);
+rhs=mod(rhs+C*delta,q);
+if lhs==rhs
+    disp('Proof is verifiable')
+else
+    disp('Proof is invalid')
+end
+
 
 %% Verify
+% modular by p
+e=@(u,v) cmod(weil(EC_pmult(u,g),EC_pmult(v,h),Group1,Group2),p);
+e11=e(1,1);
 % e(A*g, B*h)
-LHS=weil(proof(1,:),proof(3,:),En,a,q);
+LHS=cmod(weil(proof(1),proof(3),Group1,Group2),p);
+testLHS=1;
+for i=1:lhs
+    testLHS=cmod(testLHS*e11,p);
+end
 RHS=1;
 % e(alpha*g, beta*h)
-RHS=mod(RHS*weil(sigma1_1(1,:),sigma2_1(1,:),En,a,q),q);
+RHS=cmod(RHS*weil(sigma1_1(1),sigma2_1(1),Group1,Group2),p);
 for i=Ind_IO
-    RHS=mod(RHS*weil(sigma1_3(i,:),sigma2_1(2,:),En,a,q)^R(i),q);
+%   RHS=cmod(RHS*weil(EC_pmult(R(i),sigma1_3(i)),sigma2_1(2),Group1,Group2),q);
+    expon=cmod(weil(sigma1_3(i),sigma2_1(2),Group1,Group2),p);
+    for j=1:R(i)
+        RHS=cmod(RHS*expon,p);
+    end
+%     RHS=cmod(RHS*weil(sigma1_3(i),sigma2_1(2),Group1,Group2)^R(i),q);
 end
 % e(C*g, delta*h)
-RHS=mod(RHS*weil(proof(2,:),sigma2_1(3,:),En,a,q),q);
+RHS=cmod(RHS*weil(proof(2),sigma2_1(3),Group1,Group2),p);
+testRHS=1;
+for i=1:rhs
+    testRHS=cmod(testRHS*e11,p);
+end
 VfyResult=LHS==RHS;
+if RHS==1 && LHS==1
+    disp('Unable to verify')
+elseif VfyResult==1
+    disp('Verification Success')
+else
+    disp('Verification Failure')
+end

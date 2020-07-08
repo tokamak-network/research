@@ -1,24 +1,37 @@
-function [ k ] = EC_order( P,a,p )
+function [ modified_Point ] = EC_order( Point )
 %UNTITLED5 Summary of this function goes here
 %   Detailed explanation goes here
+modified_Point=Point;
 O=[inf,inf];
+a=Point.a;
+p=Point.q;
+k=Point.k;
+if k>1
+    P=[mod(-Point.x,p) Point.y/sqrt(-1)];
+else
+    P=[Point.x Point.y];
+end
 if prod(P==O)
-    k=1;
+    n=1;
+    modified_Point.order=n;
     return
 end
-Q=EC_add(P,P,a,p);
-if prod(Q==O)
-    k=2;
+Q=EC_add(Point,Point);
+if prod([Q.x Q.y]==O)
+    n=2;
+    modified_Point.order=n;
     return
 end
-for k=3:p+1
-    Q=EC_add(P,Q,a,p);
-    if prod(Q==O)
+for n=3:p+1
+    Q=EC_add(Point,Q);
+    if prod([Q.x Q.y]==O)
+        modified_Point.order=n;
         return
     end
 end
-if prod(Q==O)==0
-    k=inf;
+if prod([Q.x Q.y]==O)==0
+    n=inf;
+    modified_Point.order=n;
 end
 end
 

@@ -1,7 +1,22 @@
-function [ out ] = EC_line(P,Q,a,p)
+function [out] = EC_line(Point1,Point2)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 % output: g(x,y)=cy+dx+e
+
+if Point1.k ~= Point2.k
+    error('mismatched degrees')
+end
+a=Point1.a;
+p=Point1.q;
+k=Point1.k;
+if k>1
+    P=[cmod(-Point1.x,p) Point1.y/sqrt(-1)];
+    Q=[cmod(-Point2.x,p) Point2.y/sqrt(-1)];
+else
+    P=[Point1.x Point1.y];
+    Q=[Point2.x Point2.y];
+end
+
 xp=P(1);
 xq=Q(1);
 yp=P(2);
@@ -22,20 +37,28 @@ if prod(P==Q) && yp~=0
     if yp==inf
         'fsadfsdf'
     end
-    s=mod((3*xp^2+a)*MODinv((2*yp),p),p);
+    s=cmod((3*xp^2+a)*MODinv((2*yp),p),p);
+    c=1;
+    d=cmod(-s,p);
+    e=cmod(s*xp-yp,p);
 elseif xp==xq
     %vertical
     c=0;
     d=1;
-    e=mod(-xp,p);
-    out=[c,d,e];
-    return
+    e=cmod(-xp,p);
 else
-    s=mod((yq-yp)*MODinv((xq-xp),p),p); 
+    s=cmod((yq-yp)*MODinv((xq-xp),p),p);
+    c=1;
+    d=cmod(-s,p);
+    e=cmod(s*xp-yp,p);
 end
-c=1;
-d=mod(-s,p);
-e=mod(s*xp-yp,p);
-out=[c,d,e];
+
+if k>1
+    c=c/sqrt(-1);
+    d=-d;
+end
+
+out=[c d e];
+
 end
 

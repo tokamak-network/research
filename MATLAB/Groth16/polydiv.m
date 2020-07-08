@@ -33,6 +33,9 @@ else
     
     for i=1:length(cquo)
         [c,t]=coeffs(rem);
+        if isempty(t)
+            break
+        end
         if double(tB(1)*tquo(i)==t(1))
             cquo(i)=mod(c(1)*MODinv(cB(1),q),q);
             rem=pmod(rem-cquo(i)*tquo(i)*B,q);

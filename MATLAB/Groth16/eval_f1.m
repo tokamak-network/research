@@ -1,19 +1,19 @@
-function [ out ] =eval_f1(T,P,R,a,p )
+function [ out ] =eval_f1(T,P,R)
 % Eval f1 at the point T
 % div(f1)=(P+R)-(R)-(P)+(O)
-
+p=T.q;
 O=[inf,inf];
-M=EC_add(P,R,a,p);
-if prod(EC_inv(M,p)==T)
-    'fdsafe'
-end
-g1=EC_line(P,R,a,p);
-if prod(M==O)
+M=EC_add(P,R);
+% if Peq(EC_inv(M),T)
+%     'fdsafe'
+% end
+g1=EC_line(P,R);
+if prod([M.x M.y]==O)
     g2=[0, 0, 1];
 else
-    g2=EC_line(M,EC_inv(M,p),a,p);
+    g2=EC_line(M,EC_inv(M));
 end
-out=mod(eval_line(g2,T,p)*MODinv(eval_line(g1,T,p),p),p);
+out=cmod(eval_line(g2,T)*MODinv(eval_line(g1,T),p),p);
 if isnan(out)
     'fsdafsadf'
 end

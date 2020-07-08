@@ -54,7 +54,7 @@ class Polfield:
 
             self.roots.update({i : rootsi})
 
-    def compute_vanishing_polynomial(bits: int, t: FQ):
+    def compute_vanishing_polynomial(self, bits: int, t: FQ):
         # t : toxic waste(셋업 마치면 사라져야되는 값)
         # m : constraints 수에 근접(A, B, C 행렬의 row 갯수), 무조껀 짝수
         # -> taget polynomial H * T = A*u + B*u - C*u
@@ -65,9 +65,9 @@ class Polfield:
         m = 1 << bits
         tm = t ** m
 
-        print("m : "  , m )
-        print("t : "  , t )
-        print("t^m : ", tm)
+        # print("m : "  , m )
+        # print("t : "  , t )
+        # print("t^m : ", tm)
 
         u = dict()
         for i in range(m):
@@ -78,9 +78,9 @@ class Polfield:
         #TODO : if tm == 1
 
         z = tm - FQ(1)
-        print("z : ", z)
+        # print("z : ", z)
         l = z / FQ(m)
-        print("l : ", l)
+        # print("l : ", l)
 
         for i in range(m):
             u[i] = l / (t - self.roots[bits][i])
@@ -89,7 +89,7 @@ class Polfield:
         return u
 
     @classmethod
-    def log2(cls, V: Int) -> "Int":
+    def log2(cls, V: int) -> "Int":
         if V & 0xFFFF0000 != 0:
             a = 16
             V &= 0xFFFF0000

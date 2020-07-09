@@ -13,6 +13,8 @@ class Groth:
         with open(circuit_path) as json_file:
             self.circuit = json.load(json_file)
 
+        num_vars = int(self.circuit["nVars"])
+
         self.setup = {
             "vk_proof" : {
                 "protocol" : "groth",
@@ -20,9 +22,9 @@ class Groth:
                 "nPublic"  : int(self.circuit["nPubInputs"] + self.circuit["nOutputs"]),
                 "domainBits" : 0,
                 "domainSize" : 0,
-                "polsA" : {},
-                "polsB" : {},
-                "polsC" : {}
+                "polsA" : [None]*num_vars,
+                "polsB" : [None]*num_vars,
+                "polsC" : [None]*num_vars
             },
             "vk_verifier": {
                 "protocol" : "groth",
@@ -41,21 +43,27 @@ class Groth:
 
 
     def calc_polynomials(self):
-        # TODO : check if length affect the result
-        for c in self.circuit["constraints"]:
-            self.setup["vk_proof"]["polsA"].update(c[0])
-            self.setup["vk_proof"]["polsB"].update(c[1])
-            self.setup["vk_proof"]["polsC"].update(c[2])
+        num_constraints = len(self.circuit["constraints"])
+        consts = self.circuit["constraints"]
+        for c in range(num_constraints):
+            A = self.circuit["constraints"][c][0]
+            B = self.circuit["constraints"][c][1]
+            C = self.circuit["constraints"][c][2]
+            for s in A:
+                self.setup["vk_proof"]["polsA"][int(s)] = {str(c) : A[s] if A[s] != None else None}
+            for s in B:
+                self.setup["vk_proof"]["polsB"][int(s)] = {str(c) : B[s] if B[s] != None else None}
+            for s in C:
+                self.setup["vk_proof"]["polsC"][int(s)] = {str(c) : C[s] if C[s] != None else None}
+
+        # TODO : ensure soundness of input consistency
+        # input_i * 0 = 0
 
     def calc_values_at_T(self):
         domain_bits = self.setup["vk_proof"]["domainBits"]
         toxic_t = self.setup["toxic"]["t"]
         z_t = self.PF.compute_vanishing_polynomial(domain_bits, toxic_t)
         u = self.PF.evaluate_lagrange_polynomials(domain_bits, toxic_t)
-        # print(domain_bits)
-        # print(toxic_t)
-        # print(z_t)
-        # print(u)
 
         n_vars = int(self.circuit["nVars"])
 
@@ -63,24 +71,17 @@ class Groth:
         b_t = [FQ(0)]*n_vars
         c_t = [FQ(0)]*n_vars
 
-        print(a_t)
-        print(len(a_t))
-
-
-    # def calc_encrypted_value_at_T(self, circuit):
-    #     return
-
 
 if __name__ == "__main__":
 
     gr = Groth("test.r1cs.json")
     # print(gr.setup)
     gr.calc_polynomials()
-    # polsA = gr.setup["vk_proof"]["polsA"]
+    polsA = gr.setup["vk_proof"]["polsA"]
     # polsB = gr.setup["vk_proof"]["polsB"]
     # polsC = gr.setup["vk_proof"]["polsC"]
     # print(polsA)
-    # print(len(polsA))
+    print(len(polsA))
     # print(len(polsB))
     # print(len(polsC))
     gr.calc_values_at_T()

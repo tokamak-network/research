@@ -44,7 +44,7 @@ class Groth:
 
     def calc_polynomials(self):
         num_constraints = len(self.circuit["constraints"])
-        consts = self.circuit["constraints"]
+        # consts = self.circuit["constraints"]
         for c in range(num_constraints):
             A = self.circuit["constraints"][c][0]
             B = self.circuit["constraints"][c][1]
@@ -56,8 +56,11 @@ class Groth:
             for s in C:
                 self.setup["vk_proof"]["polsC"][int(s)] = {str(c) : C[s] if C[s] != None else None}
 
-        # TODO : ensure soundness of input consistency
+        # to ensure soundness of input consistency
         # input_i * 0 = 0
+        n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"])
+        for i in range(n_pub_plus_n_out+1):
+            self.setup["vk_proof"]["polsA"][i] = {str(num_constraints+i) : FQ(1)}
 
     def calc_values_at_T(self):
         domain_bits = self.setup["vk_proof"]["domainBits"]
@@ -70,6 +73,29 @@ class Groth:
         a_t = [FQ(0)]*n_vars
         b_t = [FQ(0)]*n_vars
         c_t = [FQ(0)]*n_vars
+
+        # print(self.setup["vk_proof"]["polsA"][0])
+        # print(self.setup["vk_proof"]["polsA"][1])
+        # print(self.setup["vk_proof"]["polsA"][2])
+
+        for s in range(n_vars):
+            A = self.setup["vk_proof"]["polsA"][s]
+            B = self.setup["vk_proof"]["polsB"][s]
+            C = self.setup["vk_proof"]["polsC"][s]
+            if A != None:
+                for c in A:
+                    a_t[s] = a_t[s] + u[int(c)] * int(A[c])
+
+            if B != None:
+                for c in B:
+                    b_t[s] = b_t[s] + u[int(c)] * int(B[c])
+
+            if C != None:
+                for c in C:
+                    c_t[s] = c_t[s] + u[int(c)] * int(C[c])
+
+        return [a_t, b_t, c_t]
+
 
 
 if __name__ == "__main__":
@@ -84,5 +110,6 @@ if __name__ == "__main__":
     print(len(polsA))
     # print(len(polsB))
     # print(len(polsC))
-    gr.calc_values_at_T()
+    at_list = gr.calc_values_at_T()
+    print(at_list[0])
     # print(FQ(13) * [])

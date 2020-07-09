@@ -5,8 +5,8 @@
 
 clear
 %% System Params
-p=19;
-q=19^2-1;
+p=43;
+q=p^2-1;
 k=2;
 % Elliptic curve: y^2=x^3+a*x+0
 a=1;
@@ -93,7 +93,15 @@ Cp=[[0.0, 0.0, 0.0, 0.0];
 [4.0, -4.333333333333333, 1.5, -0.16666666666666666];
 [-6.0, 9.5, -4.0, 0.5];
 [4.0, -7.0, 3.5, -0.5]];
-
+[NUM,DEN]=rat([Ap;Bp;Cp]);
+denoms=unique(DEN);
+mul=1;
+for i=1:length(denoms)
+    mul=lcm(mul,denoms(i));
+end
+Ap=Ap*mul;
+Bp=Bp*mul;
+Cp=Cp*mul^2;
 Ap=rmod(Ap,q);
 Bp=rmod(Bp,q);
 Cp=rmod(Cp,q);
@@ -185,12 +193,12 @@ end
 sigma1_3(numel(Ind_IO))=g;
 VAL=zeros(1,numel(Ind_IO));
 for i=Ind_IO
-    VAL(i)=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(gamma,q),q);
+    VAL(i)=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i)),q);
     sigma1_3(i)=EC_pmult(VAL(i),g);
 end
 sigma1_4(NumWires)=g;
 for i=Ind_mid
-    val=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(delta,q),q);
+    val=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i)),q);
     sigma1_4(i)=EC_pmult(val,g);
 end
 sigma1_5(NumGates-1)=g;
@@ -216,8 +224,8 @@ s=randi(q-1);
 
 A=mod(alpha+R*Ax_val+r*delta,q);
 B=mod(beta+R*Bx_val+s*delta,q);
-C=mod(MODinv(delta,q)*(R(Ind_mid)*(beta*Ax_val(Ind_mid)+alpha*Bx_val(Ind_mid)+Cx_val(Ind_mid))+Hx_val*Zx_val)...
-    +A*s+B*r+mod(-r*s*delta,q),q);
+C=mod((R(Ind_mid)*(beta*Ax_val(Ind_mid)+alpha*Bx_val(Ind_mid)+Cx_val(Ind_mid))+Hx_val*Zx_val)...
+    +A*s*delta+B*r*delta+mod(-r*s*delta^2,q),q);
 % proof is denoted as pi in Groth16
 proof=[EC_pmult(A,g);
     EC_pmult(C,g);
@@ -226,8 +234,8 @@ disp('Proof is ready')
 lhs=mod(A*B,q);
 rhs=0;
 rhs=mod(rhs+alpha*beta,q);
-rhs=mod(rhs+R(Ind_IO)*VAL.'*gamma,q);
-rhs=mod(rhs+C*delta,q);
+rhs=mod(rhs+R(Ind_IO)*VAL.',q);
+rhs=mod(rhs+C,q);
 if lhs==rhs
     disp('Proof is verifiable')
 else
@@ -250,14 +258,14 @@ RHS=1;
 RHS=cmod(RHS*weil(sigma1_1(1),sigma2_1(1),Group1,Group2),p);
 for i=Ind_IO
 %   RHS=cmod(RHS*weil(EC_pmult(R(i),sigma1_3(i)),sigma2_1(2),Group1,Group2),q);
-    expon=cmod(weil(sigma1_3(i),sigma2_1(2),Group1,Group2),p);
+    expon=cmod(weil(sigma1_3(i),h,Group1,Group2),p);
     for j=1:R(i)
         RHS=cmod(RHS*expon,p);
     end
 %     RHS=cmod(RHS*weil(sigma1_3(i),sigma2_1(2),Group1,Group2)^R(i),q);
 end
 % e(C*g, delta*h)
-RHS=cmod(RHS*weil(proof(2),sigma2_1(3),Group1,Group2),p);
+RHS=cmod(RHS*weil(proof(2),h,Group1,Group2),p);
 testRHS=1;
 for i=1:rhs
     testRHS=cmod(testRHS*e11,p);

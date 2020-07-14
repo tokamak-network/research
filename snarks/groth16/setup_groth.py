@@ -97,19 +97,42 @@ class Groth:
         return [a_t, b_t, c_t]
 
 
+    def calc_encrypted_values_at_T(self):
+        num_vars = int(self.circuit["nVars"])
+        n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"]) + 1
+        v = self.calc_values_at_T()
+        A = [None]*num_vars
+        B1 = [None]*num_vars
+        B2 = [None]*num_vars
+        C = [None]*num_vars
+        IC = [None]*n_pub_plus_n_out
+
+        kalfa = FQ(5) #TODO : turns into random
+        kbeta = FQ(5) #TODO : turns into random
+        kgamma = FQ(5) #TODO : turns into random
+        kdelta = FQ(5) #TODO : turns into random
+
+        inv_delta = 1 / kdelta
+        inv_gamma = 1 / kgamma
+
+        #TODO : alfa, beta, delta, gamma, alfa-beta paring
+        #TODO : affine, paring
+
+
+
 
 if __name__ == "__main__":
 
     gr = Groth("test.r1cs.json")
     # print(gr.setup)
     gr.calc_polynomials()
-    polsA = gr.setup["vk_proof"]["polsA"]
+    # polsA = gr.setup["vk_proof"]["polsA"]
     # polsB = gr.setup["vk_proof"]["polsB"]
     # polsC = gr.setup["vk_proof"]["polsC"]
     # print(polsA)
-    print(len(polsA))
+    # print(len(polsA))
     # print(len(polsB))
     # print(len(polsC))
     at_list = gr.calc_values_at_T()
-    print(at_list[0])
+    # print(at_list[0])
     # print(FQ(13) * [])

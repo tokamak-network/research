@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from typing import cast, List, Tuple, Sequence, Union
-from field import FQ
+from field import FQ, FR
 from polfield import Polfield, field_modulus
 
 import json
@@ -37,7 +37,7 @@ class Groth:
         self.setup["vk_proof"]["domainSize"] = 1 << self.setup["vk_proof"]["domainBits"]
 
         #TODO : need random function
-        self.setup["toxic"]["t"] = FQ(5)
+        self.setup["toxic"]["t"] = FR(5)
 
         self.PF = Polfield()
 
@@ -60,7 +60,7 @@ class Groth:
         # input_i * 0 = 0
         n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"])
         for i in range(n_pub_plus_n_out+1):
-            self.setup["vk_proof"]["polsA"][i] = {str(num_constraints+i) : FQ(1)}
+            self.setup["vk_proof"]["polsA"][i] = {str(num_constraints+i) : FR(1)}
 
     def calc_values_at_T(self):
         domain_bits = self.setup["vk_proof"]["domainBits"]
@@ -70,9 +70,9 @@ class Groth:
 
         n_vars = int(self.circuit["nVars"])
 
-        a_t = [FQ(0)]*n_vars
-        b_t = [FQ(0)]*n_vars
-        c_t = [FQ(0)]*n_vars
+        a_t = [FR(0)]*n_vars
+        b_t = [FR(0)]*n_vars
+        c_t = [FR(0)]*n_vars
 
         # print(self.setup["vk_proof"]["polsA"][0])
         # print(self.setup["vk_proof"]["polsA"][1])
@@ -107,10 +107,10 @@ class Groth:
         C = [None]*num_vars
         IC = [None]*n_pub_plus_n_out
 
-        kalfa = FQ(5) #TODO : turns into random
-        kbeta = FQ(5) #TODO : turns into random
-        kgamma = FQ(5) #TODO : turns into random
-        kdelta = FQ(5) #TODO : turns into random
+        kalfa = FR(5) #TODO : should turn into random
+        kbeta = FR(5) #TODO : should turn into random
+        kgamma = FR(5) #TODO : should turn into random
+        kdelta = FR(5) #TODO : should turn into random
 
         inv_delta = 1 / kdelta
         inv_gamma = 1 / kgamma

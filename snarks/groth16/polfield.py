@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from typing import cast, List, Tuple, Sequence, Union
-from field import FQ
+from field import FQ, FR
 
 from math import log2
 
@@ -29,8 +29,8 @@ class Polfield:
         # print("rem : ", rem)
         # print("s : ", s)
 
-        self.w = { s : FQ(5)**rem }
-        self.wi = { s :  FQ(1) / self.w[s] }
+        self.w = { s : FR(5)**rem }
+        self.wi = { s :  FR(1) / self.w[s] }
 
         n = s - 1
         while n >= 0:
@@ -44,7 +44,7 @@ class Polfield:
     def _set_roots(self, n: int):
         self.roots = {}
         for i in reversed(range(0, n+1)):
-            r = FQ(1)
+            r = FR(1)
             nroots = 1 << i
             rootsi = {}
 
@@ -59,7 +59,7 @@ class Polfield:
         # m : constraints 수에 근접(A, B, C 행렬의 row 갯수), 무조껀 짝수
         # -> taget polynomial H * T = A*u + B*u - C*u
         m = 1 << bits
-        return t**m - FQ(1)
+        return t**m - FR(1)
 
     def evaluate_lagrange_polynomials(self, bits: int, t: FQ) -> "Dict":
         m = 1 << bits
@@ -77,9 +77,9 @@ class Polfield:
 
         #TODO : if tm == 1
 
-        z = tm - FQ(1)
+        z = tm - FR(1)
         # print("z : ", z)
-        l = z / FQ(m)
+        l = z / FR(m)
         # print("l : ", l)
 
         for i in range(m):
@@ -128,7 +128,7 @@ class Polfield:
 #     print(len(pf.w))
 #     print(pf.roots[0])
 #     print(pf.roots[1])
-#     t = FQ(5)
+#     t = FR(5)
 #     evaluated = pf.evaluate_lagrange_polynomials(7, t)
 #     print("0 : ", evaluated[0])
 #     print("1 : ", evaluated[1])

@@ -10,14 +10,14 @@ from __future__ import absolute_import
 from typing import cast, List, Tuple, Sequence, Union
 
 # The prime modulus of the field
-# field_modulus = 21888242871839275222246405745257275088696311157297823662689037894645226208583
-field_modulus = (
-    21888242871839275222246405745257275088548364400416034343698204186575808495617
-)
-# CHANGE: Changing the modulus to the embedded curve
+field_modulus = {
+    "fq" : 21888242871839275222246405745257275088696311157297823662689037894645226208583,
+    "fr" : 21888242871839275222246405745257275088548364400416034343698204186575808495617
+}
 
 # See, it's prime!
-assert pow(2, field_modulus, field_modulus) == 2
+# assert pow(2, field_modulus["fq"], field_modulus["fq"]) == 2
+# assert pow(2, field_modulus["fr"], field_modulus["fr"]) == 2
 
 # The modulus of the polynomial in this representation of FQ12
 # FQ12_MODULUS_COEFFS = (82, 0, 0, 0, 0, 0, -18, 0, 0, 0, 0, 0)  # Implied + [1]
@@ -40,27 +40,29 @@ def inv(a: int, n: int) -> int:
 
 
 IntOrFQ = Union[int, "FQ"]
+IntOrFR = Union[int, "FR"]
 
 
 # A class for field elements in FQ. Wrap a number in this class,
 # and it becomes a field element.
 class FQ(object):
     n = None  # type: int
+    field_modulus = field_modulus["fq"]
 
     def __init__(self, val: IntOrFQ) -> None:
         if isinstance(val, FQ):
             self.n = val.n
         else:
-            self.n = val % field_modulus
+            self.n = val % self.field_modulus
         assert isinstance(self.n, int)
 
     def __add__(self, other: IntOrFQ) -> "FQ":
         on = other.n if isinstance(other, FQ) else other
-        return FQ((self.n + on) % field_modulus)
+        return FQ((self.n + on) % self.field_modulus)
 
     def __mul__(self, other: IntOrFQ) -> "FQ":
         on = other.n if isinstance(other, FQ) else other
-        return FQ((self.n * on) % field_modulus)
+        return FQ((self.n * on) % self.field_modulus)
 
     def __rmul__(self, other: IntOrFQ) -> "FQ":
         return self * other
@@ -70,16 +72,16 @@ class FQ(object):
 
     def __rsub__(self, other: IntOrFQ) -> "FQ":
         on = other.n if isinstance(other, FQ) else other
-        return FQ((on - self.n) % field_modulus)
+        return FQ((on - self.n) % self.field_modulus)
 
     def __sub__(self, other: IntOrFQ) -> "FQ":
         on = other.n if isinstance(other, FQ) else other
-        return FQ((self.n - on) % field_modulus)
+        return FQ((self.n - on) % self.field_modulus)
 
     def __div__(self, other: IntOrFQ) -> "FQ":
         on = other.n if isinstance(other, FQ) else other
         assert isinstance(on, int)
-        return FQ(self.n * inv(on, field_modulus) % field_modulus)
+        return FQ(self.n * inv(on, self.field_modulus) % self.field_modulus)
 
     def __truediv__(self, other: IntOrFQ) -> "FQ":
         return self.__div__(other)
@@ -87,7 +89,7 @@ class FQ(object):
     def __rdiv__(self, other: IntOrFQ) -> "FQ":
         on = other.n if isinstance(other, FQ) else other
         assert isinstance(on, int), on
-        return FQ(inv(self.n, field_modulus) * on % field_modulus)
+        return FQ(inv(self.n, self.field_modulus) * on % self.field_modulus)
 
     def __rtruediv__(self, other: IntOrFQ) -> "FQ":
         return self.__rdiv__(other)
@@ -166,3 +168,9 @@ class FQ(object):
     @classmethod
     def zero(cls) -> "FQ":
         return cls(0)
+
+class FR(FQ):
+    field_modulus = field_modulus["fr"]
+
+    def __init__(self, val: IntOrFR) -> None:
+        super().__init__(val)

@@ -12,8 +12,9 @@ class BN128:
         self.zero = [FQ(0), FQ(1), FQ(0)]
 
     # jacobian coordinate
+    @classmethod
     def affine(self, p) -> "BN128":
-        if p == self.zero:
+        if p == [FQ(0), FQ(1), FQ(0)]:
             return self.zero
         else:
             z_inv = 1 / p[0]
@@ -31,9 +32,36 @@ class BN128:
 
             return res
 
-    def double(self):
-        return
+    @classmethod
+    def double(self, p):
+        res = [None] * 3
+        if p == [FQ(0), FQ(1), FQ(0)]:
+            return p
 
+        # A = X1^2
+        # B = Y1^2
+        # C = B^2
+        A = FQ(p[0]) ** 2
+        B = FQ(p[1]) ** 2
+        C = B ** 2
+
+        # D = 2 * ((X1 + B)^2 - A - C)
+        D = 2 * (((p[0] + B) ** 2) - A - C)
+        E = 3 * A
+        F = E ** 2
+
+        res[0] = F - 2 * D
+        eightC = C * 8
+
+        # Y3 = E * (D - X3) - 8 * C
+        res[1] = E * (D - res[0]) - eightC
+
+        Y1Z1 = p[1] * p[2]
+        res[2] = Y1Z1 * 2
+
+        return res
+
+    @classmethod
     def add(self):
         return
 
@@ -56,6 +84,9 @@ if __name__ == "__main__":
     bn = BN128(p)
     p_affine = bn.affine(p)
     print(p_affine)
+
+    # double() test : it works!
+    print(bn.double(p))
 
     # mul_scalar test : test failed
     # p_mul = bn.mul_scalar(p, 151)

@@ -13,7 +13,7 @@ class BN128:
 
     # jacobian coordinate
     @classmethod
-    def affine(self, p) -> "BN128":
+    def affine(cls, p) -> "BN128":
         if p == [FQ(0), FQ(1), FQ(0)]:
             return self.zero
         else:
@@ -33,7 +33,7 @@ class BN128:
             return res
 
     @classmethod
-    def double(self, p):
+    def double(cls, p):
         res = [None] * 3
         if p == [FQ(0), FQ(1), FQ(0)]:
             return p
@@ -62,8 +62,47 @@ class BN128:
         return res
 
     @classmethod
-    def add(self):
-        return
+    def add(cls, p1, p2):
+        if p1 == [FQ(0), FQ(1), FQ(0)]: return p2
+        if p2 == [FQ(0), FQ(1), FQ(0)]: return p1
+
+        res = [None] * 3
+
+        Z1Z1 = p1[2] ** 2
+        Z2Z2 = p2[2] ** 2
+
+        U1 = p1[0] * Z2Z2 #U1 = X1 * Z2Z2
+        U2 = p2[0] * Z1Z1 #U2 = X2 * Z1Z1
+
+        Z1_cubed = p1[2] * Z1Z1
+        Z2_cubed = p2[2] * Z2Z2
+
+        S1 = p1[1] * Z2_cubed #S1 = Y1 * Z2 * Z2Z2
+        S2 = p[1] * Z1_cubed #S2 = Y2 * Z1 * Z1Z1
+
+        if U1 == U2 and S1 == S2:
+            cls.double(p1)
+
+        H = U2 - U1
+
+        S2_minus_S1 = S2 - S1
+
+        I = (H*2) ** 2
+        J = H * I
+
+        r = S2_minus_S1 + S2_minus_S1
+        V = U1 * I
+
+        S1_J = S1 * J
+
+        # X3 = r^2 - J - 2 * V
+        # Y3 = r * (V-X3)-2*S1*J
+        # Z3 = ((Z1+Z2)^2-Z1Z1-Z2Z2) * H
+        res[0] = r ** 2 - J - 2*V
+        res[1] = r * (V - res[0]) - (2 * S1_J)
+        res[2] = ((p1[2] + p2[2])**2 - Z1Z1 - Z2Z2) * H
+
+        return res
 
     # def mul_scalar(self, base, e)-> "BN128":
     #     res = FQ(0)
@@ -86,7 +125,12 @@ if __name__ == "__main__":
     print(p_affine)
 
     # double() test : it works!
+    double_p = bn.double(p)
     print(bn.double(p))
+    print(bn.double(double_p))
+
+    # add() test : it works!
+    print("bn.add(p, p) : ", bn.add(double_p, p))
 
     # mul_scalar test : test failed
     # p_mul = bn.mul_scalar(p, 151)

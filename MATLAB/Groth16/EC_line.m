@@ -21,15 +21,12 @@ xp=P(1);
 xq=Q(1);
 yp=P(2);
 yq=Q(2);
-% O=[inf,inf];
-% if prod(P==O) && prod(Q==O)
-%     out=[0,0,1];
-%     return
-% end
-% 
-% if xor(prod(P==O),prod(Q==O))
-%     error('invalid divisor')
-% end
+
+O=[inf,inf];
+if prod(P==O) && prod(Q==O)
+    error('Both input points are Point at Infinity')
+end
+
     
 
 if prod(P==Q) && yp~=0
@@ -46,6 +43,16 @@ elseif xp==xq
     c=0;
     d=1;
     e=cmod(-xp,p);
+elseif  prod(P==O) && ~prod(Q==O)
+        %vertical
+    c=0;
+    d=1;
+    e=cmod(-xq,p);
+elseif  ~prod(P==O) && prod(Q==O)
+        %vertical
+    c=0;
+    d=1;
+    e=cmod(-xp,p);
 else
     s=cmod((yq-yp)*MODinv((xq-xp),p),p);
     c=1;
@@ -55,7 +62,7 @@ end
 
 if k>1
     c=c/sqrt(-1);
-    d=-d;
+    d=cmod(-d,p);
 end
 
 out=[c d e];

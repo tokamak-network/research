@@ -31,7 +31,7 @@ while newr~=0
     r=newr;
     newr=oldr-Quotient*newr;
     if isnan(newr)
-        'fsdafe'
+        error('No inverse exists') 
     end
 end
 if r>1

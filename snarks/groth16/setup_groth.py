@@ -1,9 +1,13 @@
 from __future__ import absolute_import
 from typing import cast, List, Tuple, Sequence, Union
-from field import FQ, FR
-from polfield import Polfield, field_modulus
+from .field import FR
+from .polfield import Polfield, field_modulus
+from ..babyjubjub.field import FQ, FQ2
+from ..babyjubjub.bn128_curve import G1, G2, mulScalar
+from ..babyjubjub.bn128_paring import pairing
 
 import json
+import os
 
 IntOrFQ = Union[int, "FQ"]
 
@@ -22,7 +26,8 @@ class Groth:
                 "nPublic"  : int(self.circuit["nPubInputs"] + self.circuit["nOutputs"]),
                 "domainBits" : 0,
                 "domainSize" : 0,
-                "polsA" : [None]*num_vars,
+                #"polsA" : [None]*num_vars,
+                "polsA" : [dict() for x in range(num_vars)],
                 "polsB" : [None]*num_vars,
                 "polsC" : [None]*num_vars
             },
@@ -50,17 +55,21 @@ class Groth:
             B = self.circuit["constraints"][c][1]
             C = self.circuit["constraints"][c][2]
             for s in A:
+                # TODO: None?
                 self.setup["vk_proof"]["polsA"][int(s)] = {str(c) : A[s] if A[s] != None else None}
+                #self.setup["vk_proof"]["polsA"][int(s)][c] = A[s] if A[s] != None else None
             for s in B:
                 self.setup["vk_proof"]["polsB"][int(s)] = {str(c) : B[s] if B[s] != None else None}
+                #self.setup["vk_proof"]["polsB"][int(s)][c] = B[s] if B[s] != None else None
             for s in C:
                 self.setup["vk_proof"]["polsC"][int(s)] = {str(c) : C[s] if C[s] != None else None}
+                #self.setup["vk_proof"]["polsC"][int(s)][c] = C[s] if C[s] != None else None
 
         # to ensure soundness of input consistency
         # input_i * 0 = 0
         n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"])
         for i in range(n_pub_plus_n_out+1):
-            self.setup["vk_proof"]["polsA"][i] = {str(num_constraints+i) : FR(1)}
+            self.setup["vk_proof"]["polsA"][i][num_constraints+i] = FR(1)
 
     def calc_values_at_T(self):
         domain_bits = self.setup["vk_proof"]["domainBits"]
@@ -94,7 +103,7 @@ class Groth:
                 for c in C:
                     c_t[s] = c_t[s] + u[int(c)] * int(C[c])
 
-        return [a_t, b_t, c_t]
+        return [a_t, b_t, c_t, z_t]
 
 
     def calc_encrypted_values_at_T(self):
@@ -118,12 +127,54 @@ class Groth:
         #TODO : alfa, beta, delta, gamma, alfa-beta paring
         #TODO : affine, paring
 
+        """
+        setup.vk_proof.vk_alfa_1 = G1.affine(G1.mulScalar( G1.g, setup.toxic.kalfa));
+        setup.vk_proof.vk_beta_1 = G1.affine(G1.mulScalar( G1.g, setup.toxic.kbeta));
+        setup.vk_proof.vk_delta_1 = G1.affine(G1.mulScalar( G1.g, setup.toxic.kdelta));
 
+        setup.vk_proof.vk_beta_2 = G2.affine(G2.mulScalar( G2.g, setup.toxic.kbeta));
+        setup.vk_proof.vk_delta_2 = G2.affine(G2.mulScalar( G2.g, setup.toxic.kdelta));
+
+
+        setup.vk_verifier.vk_alfa_1 = G1.affine(G1.mulScalar( G1.g, setup.toxic.kalfa));
+
+        setup.vk_verifier.vk_beta_2 = G2.affine(G2.mulScalar( G2.g, setup.toxic.kbeta));
+        setup.vk_verifier.vk_gamma_2 = G2.affine(G2.mulScalar( G2.g, setup.toxic.kgamma));
+        setup.vk_verifier.vk_delta_2 = G2.affine(G2.mulScalar( G2.g, setup.toxic.kdelta));
+        """
+
+        #print(G1, kalfa)
+        vk_proof_alfa_1 = mulScalar(G1, kalfa)
+        print(f"G1 : {G1}")
+        print(f"kalfa : {kalfa}")
+        print(f"vk_proof_alfa_1 : {vk_proof_alfa_1}")
+        vk_proof_beta_1 = mulScalar(G1, kbeta)
+        vk_proof_delta_1 = mulScalar(G1, kdelta)
+
+        vk_proof_beta_2 = mulScalar(G2, kbeta)
+        vk_proof_delta_2 = mulScalar(G2, kdelta)
+
+        vk_verifier_alfa_1 = mulScalar(G1, kalfa)
+
+        vk_verifier_beta_2 = mulScalar(G2, kbeta)
+        vk_verifier_gamma_2 = mulScalar(G2, kgamma)
+        vk_verifier_delta_2 = mulScalar(G2, kdelta)
+
+        # setup.vk_verifier.vk_alfabeta_12 = bn128.pairing( setup.vk_verifier.vk_alfa_1 , setup.vk_verifier.vk_beta_2 );
+
+        print(f"typeof vk_verifier_alfa_1 : {type(vk_verifier_alfa_1)}, {type(vk_verifier_alfa_1[0])}, {type(vk_verifier_alfa_1[1])}")
+        print(f"vk_verifier_alfa_1 : {vk_verifier_alfa_1[0]}, {vk_verifier_alfa_1[1]}")
+        print(f"typeof vk_verifier_beta_2 : {len(vk_verifier_beta_2)}, {type(vk_verifier_beta_2)}, {type(vk_verifier_beta_2[0])}, {type(vk_verifier_beta_2[1])}")
+        print(f"vk_verifier_beta_2 : {vk_verifier_beta_2[0]}, {vk_verifier_beta_2[1]}")
+        vk_verifier_alfa_1 = (FQ(12509169180663776282723030068801216576553463545861146361306867748684296333512),FQ(13767467741176394093976432344191195404568057771946939325329711084753180551863))
+        vk_verifier_beta_2 = (FQ2([20954117799226682825035885491234530437475518021362091509513177301640194298072,4540444681147253467785307942530223364530218361853237193970751657229138047649]), FQ2([21508930868448350162258892668132814424284302804699005394342512102884055673846,11631839690097995216017572651900167465857396346217730511548857041925508482915]))
+        vk_verifier_alfabeta_12 = pairing(vk_verifier_beta_2, vk_verifier_alfa_1)
+        print(f"vk_verifier_alfabeta_12 : {vk_verifier_alfabeta_12}")
 
 
 if __name__ == "__main__":
 
-    gr = Groth("test.r1cs.json")
+    gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
     # print(gr.setup)
     gr.calc_polynomials()
     # polsA = gr.setup["vk_proof"]["polsA"]
@@ -136,3 +187,5 @@ if __name__ == "__main__":
     at_list = gr.calc_values_at_T()
     # print(at_list[0])
     # print(FQ(13) * [])
+    gr.calc_encrypted_values_at_T()
+    

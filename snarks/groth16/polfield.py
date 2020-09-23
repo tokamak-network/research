@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from typing import cast, List, Tuple, Sequence, Union
-from field import FQ, FR
+from .field import FQ, FR
 
 from math import log2
 

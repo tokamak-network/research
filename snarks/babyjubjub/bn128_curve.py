@@ -1,6 +1,6 @@
 # https://github.com/ethereum/py_ecc
 
-from field import FQ, FQP, FQ2, FQ12, field_properties
+from .field import FQ, FQP, FQ2, FQ12, field_properties
 
 from typing import (
     Optional,
@@ -114,6 +114,87 @@ def multiply(pt: Point2D[Field], n: int) -> Point2D[Field]:
     else:
         return add(multiply(double(pt), int(n // 2)), pt)
 
+"""
+module.exports.naf = function naf(n) {
+    let E = BigInt(n);
+    const res = [];
+    while (E) {
+        if (E & 1n) {
+            const z = 2 - Number(E % 4n);
+            res.push( z );
+            E = E - BigInt(z);
+        } else {
+            res.push( 0 );
+        }
+        E = E >> 1n;
+    }
+    return res;
+};
+"""
+
+def naf(n):
+    res = []
+    nn = int(n)
+    while nn:
+        if nn & 1:
+            z = 2 - (nn % 4)
+            res.append(z)
+            nn = nn - z
+        else:
+            res.append(0)
+        nn = nn >> 1
+    return res
+
+"""
+exports.mulScalar = (F, base, e) => {
+    let res;
+
+    if (Scalar.isZero(e)) return F.zero;
+
+    const n = Scalar.naf(e);
+
+    if (n[n.length-1] == 1) {
+        res = base;
+    } else if (n[n.length-1] == -1) {
+        res = F.neg(base);
+    } else {
+        assert(false);
+    }
+
+    for (let i=n.length-2; i>=0; i--) {
+
+        res = F.double(res);
+
+        if (n[i] == 1) {
+            res = F.add(res, base);
+        } else if (n[i] == -1) {
+            res = F.sub(res, base);
+        }
+    }
+
+    return res;
+};
+"""
+
+def mulScalar(base, e):
+    if e == 0:
+        return 0
+    n = naf(e)
+    res = None
+    if n[len(n) - 1] == 1:
+        res = base
+    elif n[len(n) - 1] == -1:
+        res = neg(base)
+    else:
+        raise ValueError("mulScalar invalid value")
+
+    for i in range(len(n) - 2, 0, -1):
+        res = double(res)
+        if n[i] == 1:
+            res = add(res, base)
+        elif n[i] == -1:
+            res = add(res, neg(base))
+    return res
 
 def eq(p1: GeneralPoint[Field], p2: GeneralPoint[Field]) -> bool:
     return p1 == p2

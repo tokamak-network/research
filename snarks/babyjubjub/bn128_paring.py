@@ -6,7 +6,7 @@
 # FQ12는 FQ를 embedding degree 12로 확장한 extension field를 표현합니다. FQ12 자료형의 값은 길이 12의 배열이고, 모든 원소는 0보다 크고 q보다 작은 정수입니다. 예를 들어 FQ3이라면, 3+1*root(2)+2*root(-1) 이라는 값을 [3,1,2]로 저장하는 것입니다. 여기서 root(2)와 root(-1)은 예를 들기위해 임의로 설정한 값으로, extension을 어떻게 하느냐에 따라 달라지는 숫자입니다. [발표자료 3의 24슬라이드에 FQ->FQ2의 field extension의 예시가 있음]
 # FQ2는 FQ12에서 정의된 좌표들을 degree 6으로 twist한 후 생겨나는 twisted 좌표를 정의할 quadratic field를 표현합니다. FQ2 자료형의 값은 길이 2의 배열이고, 모든 원소는 0보다 크고 q보다 작은 정수입니다. [발표자료 3의 31슬라이드에 FQ2->FQ의 twisting의 예시가 있음]
 # FQP는 FQ와 같은 prime field이지만, polynomial 연산을 구현하기위해 FQ와 구분해놓은것입니다. pairing에서는 사용되지 않습니다.
-from field import FQ, FQP, FQ2, FQ12, field_properties
+from .field import FQ, FQP, FQ2, FQ12, field_properties
 
 from typing import (
     Optional,
@@ -15,7 +15,7 @@ from typing import (
     Union,
 )
 
-from bn128_curve import (
+from .bn128_curve import (
     double,
     add,
     multiply,
@@ -152,7 +152,14 @@ def miller_loop(Q: Point2D[FQ12],
 def pairing(Q: Point2D[FQ2], P: Point2D[FQ]) -> FQ12:
     assert is_on_curve(Q, b2)
     assert is_on_curve(P, b)
-    return miller_loop(twist(Q), cast_point_to_fq12(P))
+    print("#"*80, "pairing begin")
+    print(f"P : {P}")
+    print(f"Q : {Q}")
+    print(f"twist(Q) : {twist(Q)}")
+    print(f"cast_point_to_fq12(P) : {cast_point_to_fq12(P)}")
+    print("#"*80, "pairing end")
+    #return miller_loop(twist(Q), cast_point_to_fq12(P))
+    return miller_loop(Q, cast_point_to_fq12(P))
 
 
 def final_exponentiate(p: Field) -> Field:

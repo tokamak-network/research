@@ -323,7 +323,7 @@ class FQP(object):
 
     def __truediv__(self: T_FQP, other: Union[int, T_FQP]) -> T_FQP:
         return self.__div__(other)
-
+    """
     def __pow__(self: T_FQP, other: int) -> T_FQP:
         if other == 0:
             return type(self)([1] + [0] * (self.degree - 1))
@@ -333,6 +333,26 @@ class FQP(object):
             return (self * self) ** (other // 2)
         else:
             return ((self * self) ** int(other // 2)) * self
+    """
+
+    def __pow__(self: T_FQP, other: int) -> T_FQP:
+        if other == 0:
+            return type(self)([1] + [0] * (self.degree - 1))
+        elif other == 1:
+            return type(self)(self.coeffs)
+        
+        n = [int(x) for x in bin(other)[2:]]
+        if len(n) == 0:
+            return type(self)([1] + [0] * (self.degree - 1))
+
+        res = self;
+
+        for i in range(1, len(n)):
+            res = res * res
+            if n[i] != 0:
+                res = res * self
+        return res;
+        
 
     # Extended euclidean algorithm used to find the modular inverse
     def inv(self: T_FQP) -> T_FQP:

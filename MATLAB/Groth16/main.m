@@ -1,5 +1,5 @@
 %% Code written by Jehyuk Jang
-% Last updated on 6th July
+% Last updated on September, 3rd.
 % INFONET Lab., GIST, Republic of Korea
 % Contact: jjh2014@gist.ac.kr
 
@@ -20,14 +20,21 @@ y=sym('y',[1 Num_Out]);
 
 % Define program
 y(1)=(c(1)+c(2))*(c(1)-4);
+% Currently, dividing operation is not supported.
 % If the computational size of program is large,
 % this code currently makes an error while conducting polynomial interpolation in QAP part.
 % The problem is in inaccure numerical computations due to a high order interpolation.
-% A solution will be to make use of FFT roots of target polynomial. 
+% A solution can be to make use of FFT roots for target polynomial. 
 
 c_input=[2 4];
 
+disp('Program to prove:')
+disp(y(1))
+disp('with inputs')
+disp(c_input)
+
 %% From program to R1CS
+tic;
 Ind_pub=[];
 res=sym('res',[0 0]);
 res(1)='1';
@@ -36,6 +43,7 @@ A=[];
 B=[];
 C=[];
 
+% Parsing program
 column_ind=0;
 
 subterms=children(expand(y(1)));
@@ -68,12 +76,17 @@ for i=1:length(subterms)
         
         if ~findfactor(res,lastcum) && has(lastcum,c)
             res(end+1)=lastcum;
-        end
-        if has(lastcum,c)
-            C(findfactor(res,lastcum),column_ind)=lastcum/res(findfactor(res,lastcum));
+            C(findfactor(res,lastcum),column_ind)=1;
         else
-            C(1,column_ind)=lastcum;
+            A=A(:,1:column_ind-1);
+            B=B(:,1:column_ind-1);
+            column_ind=column_ind-1;
         end
+%         if has(lastcum,c)
+%             C(findfactor(res,lastcum),column_ind)=lastcum/res(findfactor(res,lastcum));
+%         else
+%             C(1,column_ind)=lastcum;
+%         end
     end
 end
 
@@ -101,12 +114,18 @@ NumWires=size(A,1);
 NumGates=size(A,2);
 
 %% Debuging code: Check the matices A,B,C well represent the program.
+disp('Program analysis result:')
+toc;
+disp(['The number of wires: ', num2str(NumWires)])
+disp(['The number of multiplication gates: ', num2str(NumGates)])
 deb_inputs=res*A.*(res*B);
 deb_outputs=res*C;
 if ~prod(double(deb_inputs==deb_outputs))==1 || ~double(deb_outputs(end)==expand(y(1)))
     disp('R1CS has an error.')
+else
+    disp('R1CS has successfully been made')
 end
-
+disp(' ')
 
 %% From program to R1CS
 
@@ -137,6 +156,7 @@ end
 
 
 %% From R1CS to QAP
+tic;
 syms x
 
 Roots_of_Z=1:NumGates;
@@ -238,10 +258,11 @@ for i=Roots_of_Z
     checksum=checksum+mod(double(subs(Px,x,i)),q);
 end
 display('QAP result:')
+toc;
 if checksum==0
-    display('Px is valid')
+    display('P(x) is valid')
 else
-    display('Invalid Px, check the Lagrange interpolation')
+    display('Invalid P(x), check the Lagrange interpolation')
 end
 
 % find H(x) such that P(x)=H(x)*Z(x)
@@ -249,12 +270,14 @@ end
 Hx=simplify(Hx);
 Hx=pmod(Hx,q);
 Hp=coeffs(Hx);
+disp('H(x) has been computed')
 
 if rem==sym(0)
-    display('Hx is valid')
+    display('H(x) is valid')
 else
-    display('Invalid Hx')
+    display('Invalid H(x)')
 end
+disp(' ')
 
 %% Elliptic curve generation
 Curve=struct();
@@ -299,6 +322,7 @@ PointInf2.y=inf;
 % end
 
 %% Groth16 Setup
+tic;
 alpha=1+randi(q-2);
 beta=1+randi(q-2);
 gamma=1+randi(q-2);
@@ -330,15 +354,15 @@ for i=0:NumGates-1
     val=mod(x_val^i,q);
     sigma1_2(i+1)=EC_pmult(val,g);
 end
-sigma1_3(NumWires)=g;
+sigma1_3(length(NumWires))=g;
 VAL=zeros(1,NumWires);
-for i=Ind_pub
-    VAL(i)=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(gamma,q),q);
-    sigma1_3(i)=EC_pmult(VAL(i),g);
+for i=1:length(Ind_pub)
+    VAL(Ind_pub(i))=mod((beta*Ax_val(Ind_pub(i))+alpha*Bx_val(Ind_pub(i))+Cx_val(Ind_pub(i)))*MODinv(gamma,q),q);
+    sigma1_3(i)=EC_pmult(VAL(Ind_pub(i)),g);
 end
-sigma1_4(NumWires)=g;
-for i=Ind_pri
-    val=mod((beta*Ax_val(i)+alpha*Bx_val(i)+Cx_val(i))*MODinv(delta,q),q);
+sigma1_4(length(NumWires))=g;
+for i=1:length(Ind_pri)
+    val=mod((beta*Ax_val(Ind_pri(i))+alpha*Bx_val(Ind_pri(i))+Cx_val(Ind_pri(i)))*MODinv(delta,q),q);
     sigma1_4(i)=EC_pmult(val,g);
 end
 sigma1_5(NumGates-1)=g;
@@ -354,17 +378,23 @@ for i=0:NumGates-1
     val=mod(x_val^i,q);
     sigma2_2(i+1)=EC_pmult(val,h);
 end
-
+disp('Groth16 Setup result:')
+toc;
+disp('CRS has been made')
+Length_CRS=length(sigma1_1)+length(sigma1_2)+length(sigma1_3)+length(sigma1_4)+length(sigma1_5)+length(sigma2_1)+length(sigma2_2);
+disp(['Length of CRS is: ', num2str(Length_CRS), '(elliptic curve points)'])
 
 %% Debuging code: Check that Polys and Coeffs are good
 
 if mod(R*Ax_val*R*Bx_val-R*Cx_val,q)==mod(Zx_val*Hx_val,q)
-    disp('Polys and Coeffs are verifiable')
+    disp('CRS is valid')
 else
-    disp('Polys are not good')
+    disp('CRS is invalid')
 end
+disp(' ')
 
 %% Groth16 Prove
+tic;
 % Generate r and s, which are secret
 r=randi(q-1);
 s=randi(q-1);
@@ -404,14 +434,17 @@ temp_Proof_B=EC_add(temp_Proof_B,EC_pmult(s,sigma1_1(3)));
 
 Proof_C=EC_add(EC_pmult(s,Proof_A),EC_pmult(r,temp_Proof_B));
 Proof_C=EC_add(Proof_C,EC_inv(EC_pmult(r,EC_pmult(s,sigma1_1(3)))));
-for i=Ind_pri
-    Proof_C=EC_add(Proof_C,EC_pmult(R(i),sigma1_4(i)));
+for i=1:length(Ind_pri)
+    Proof_C=EC_add(Proof_C,EC_pmult(R(Ind_pri(i)),sigma1_4(i)));
 end
 for i=0:NumGates-2
     Proof_C=EC_add(Proof_C,EC_pmult(Hp(i+1),sigma1_5(i+1)));
 end
 proof=[Proof_A;Proof_B;Proof_C];
-disp('Proof has made')
+disp('Groth16 Prove result:')
+toc;
+disp('Proof has been made')
+disp(['Length of proof is: ', num2str(length(proof)), '(elliptic curve points)'])
 
 %% Debuging code: Check the completeness of proof
 A=mod(alpha+R*Ax_val+r*delta,q);
@@ -434,9 +467,11 @@ if lhs==rhs && proofcheckflag==1
 else
     disp('Proof is incomplete')
 end
+disp(' ')
 
 
 %% Groth16 Verify
+tic;
 % modular by p
 % e=@(u,v) cmod(weil(EC_pmult(u,g),EC_pmult(v,h),Group1,Group2),p);
 % e11=e(1,1);
@@ -450,8 +485,8 @@ RHS=1;
 % e(alpha*g, beta*h)
 RHS=cmod(RHS*weil(sigma1_1(1),sigma2_1(1),Group1,Group2),p);
 temp=PointInf1;
-for i=Ind_pub
-    temp=EC_add(temp,EC_pmult(R(i),sigma1_3(i)));
+for i=1:length(Ind_pub)
+    temp=EC_add(temp,EC_pmult(R(Ind_pub(i)),sigma1_3(i)));
 end
 RHS=cmod(RHS*weil(temp,sigma2_1(2),Group1,Group2),p);
 % for i=Ind_IO
@@ -469,6 +504,8 @@ RHS=cmod(RHS*weil(proof(3),sigma2_1(3),Group1,Group2),p);
 %     testRHS=cmod(testRHS*e11,p);
 % end
 VfyResult=LHS==RHS;
+disp('Groth16 Verify result:')
+toc;
 if RHS==1 && LHS==1
     disp('Unable to verify, please retry')
 elseif VfyResult==1

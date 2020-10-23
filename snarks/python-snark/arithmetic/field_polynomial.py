@@ -1,23 +1,17 @@
 from .field import FQ, bn128_Field
 from .field_properties import field_properties
+from .utils import log2, mul_scalar
 
 class FieldPolynomial:
-    field_modulus = None
+    field = None
     def __init__(self):
         pass
         
-        if self.field_modulus is None:
-            raise AttributeError("Field modulus hasn't been specified")
-        """
         if self.field is None:
             raise AttributeError("Field hasn't been specified")
-        """
         self.s = 1
-        self.t = self.field_modulus - self.s
+        self.t = self.field.field_modulus - self.s
 
-        # TO find multiplicative subgroup root of unity lower than fqVal
-        # s : group size(order)
-        # t : root of unity
         while self.t % 2 != 1:
             self.s = self.s + 1
             self.t = self.t >> 1
@@ -50,6 +44,57 @@ class FieldPolynomial:
 
             self.roots.update({i : rootsi})
 
+    def extend(self, p, e):
+        if e == len(p):
+            return p
+        z = [field.zero()] * (e - len(p))
+        return p + z
+
+    def ifft(self, p):
+        if len(p) <= 1:
+            return p
+        bits = log2(len(p) - 1) + 1
+        self._set_roots(bits)
+        m = 1 << bits
+        ep = self.extend(p, m)
+        res = self._fft(ep, bits, 0, 1)
+        twoinvm = mul_scalar(self.field(0).one(), m).inv()
+        resn = [None] * m
+        for i in range(m):
+            resn[i] = res[(m-i)%m] * twoinvm
+        return resn
+
+    def fft(self, p):
+        if len(p) <= 1:
+            return p
+        bits = log2(len(p) - 1) + 1
+        self._set_roots(bits)
+
+        m = 1 << bits
+        ep = self.extend(p, m)
+        res = self._fft(ep, bits, 0, 1)
+        return res
+
+    def _fft(self, pall, bits, offset, step):
+        n = 1 << bits
+        if n == 1:
+            return [pall[offset]]
+        elif n == 2:
+            return [
+                pall[offset] + pall[offset + step],
+                pall[offset] - pall[offset + step]
+            ]
+
+        ndiv2 = n >> 1
+        p1 = self._fft(pall, bits-1, offset, step*2)
+        p2 = self._fft(pall, bits-1, offset+step, step*2)
+        out = [None] * n
+
+        for i in range(ndiv2):
+            out[i] = self.field(p1[i]) + self.roots[bits][i] * p2[i]
+            out[i+ndiv2] = self.field(p1[i]) - self.roots[bits][i] * p2[i]
+
+        return out
 
     def compute_vanishing_polynomial(self, bits: int, t: FQ):
         # t : toxic waste(셋업 마치면 사라져야되는 값)
@@ -85,6 +130,3 @@ class FieldPolynomial:
 
         return u
 
-
-class bn128_FieldPolynomial(FieldPolynomial):
-    field_modulus = field_properties["bn128"]["q"]

@@ -8,7 +8,13 @@ class CurvePoint:
     def __add__(self, other):
         return CurvePoint(self.curve, self.curve.add(self.p, other.p))
 
+    def __radd__(self, other):
+        return CurvePoint(self.curve, self.curve.add(self.p, other.p))
+
     def __mul__(self, other):
+        return CurvePoint(self.curve, self.curve.mul(self.p, other.p))
+
+    def __rmul__(self, other):
         return CurvePoint(self.curve, self.curve.mul(self.p, other.p))
 
     def __sub__(self, other):

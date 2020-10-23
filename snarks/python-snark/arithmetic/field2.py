@@ -39,7 +39,7 @@ class Field2:
         elif idx == 1:
             return self.val2
         else:
-            raise ValueError("Field index error")
+            raise ValueError("Field index error", idx)
 
     def _mulByNonResidue(self, v):
         return self.nonResidue * v

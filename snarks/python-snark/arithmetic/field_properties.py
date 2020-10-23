@@ -11,16 +11,6 @@ if TYPE_CHECKING:
         FQ12_modulus_coeffs_type,
     )
 
-"""
-Curve_Field_Properties = TypedDict('Curve_Field_Properties',
-                                   {
-                                       'field_modulus': int,
-                                       'fq2_modulus_coeffs': "FQ2_modulus_coeffs_type",
-                                       'fq12_modulus_coeffs': "FQ12_modulus_coeffs_type",
-                                   })
-Field_Properties = Dict[str, Curve_Field_Properties]
-"""
-
 field_properties = {
     "bn128": {
         "field_modulus": 21888242871839275222246405745257275088696311157297823662689037894645226208583,  # noqa: E501

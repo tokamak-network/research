@@ -1,7 +1,7 @@
 import os
 import json
 
-from ..arithmetic import bn128_Field, bn128_FieldPolynomial, log2, mul_scalar, G1, G2, pairing
+from ..arithmetic import bn128_Field, bn128_FieldPolynomial, log2, mul_scalar, G1, G2, pairing, FQ, field_properties
 
 class Groth:
     def __init__(self, circuit_path):
@@ -33,7 +33,7 @@ class Groth:
         self.setup["vk_proof"]["domainSize"] = 1 << self.setup["vk_proof"]["domainBits"]
 
         #TODO : need random function
-        self.setup["toxic"]["t"] = bn128_Field(5)
+        self.setup["toxic"]["t"] = FQ(5, field_properties["bn128"]["q"]) # bn128_Field
 
         self.PF = bn128_FieldPolynomial()
 
@@ -46,21 +46,15 @@ class Groth:
             B = self.circuit["constraints"][c][1]
             C = self.circuit["constraints"][c][2]
             for s in A:
-                # TODO: None?
-                #self.setup["vk_proof"]["polsA"][int(s)] = {str(c) : A[s] if A[s] != None else None}
-                self.setup["vk_proof"]["polsA"][int(s)][c] = A[s] if A[s] != None else None
+                self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["q"]) if A[s] != None else None
             for s in B:
-                #self.setup["vk_proof"]["polsB"][int(s)] = {str(c) : B[s] if B[s] != None else None}
-                self.setup["vk_proof"]["polsB"][int(s)][c] = B[s] if B[s] != None else None
+                self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["q"]) if B[s] != None else None
             for s in C:
-                #self.setup["vk_proof"]["polsC"][int(s)] = {str(c) : C[s] if C[s] != None else None}
-                self.setup["vk_proof"]["polsC"][int(s)][c] = C[s] if C[s] != None else None
+                self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["q"]) if C[s] != None else None
 
-        # to ensure soundness of input consistency
-        # input_i * 0 = 0
         n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"])
         for i in range(n_pub_plus_n_out+1):
-            self.setup["vk_proof"]["polsA"][i][num_constraints+i] = bn128_Field(1)
+            self.setup["vk_proof"]["polsA"][i][num_constraints+i] = FQ(1, field_properties["bn128"]["q"]) # bn128_Field
 
     def calc_values_at_T(self):
         domain_bits = self.setup["vk_proof"]["domainBits"]
@@ -70,9 +64,9 @@ class Groth:
 
         n_vars = int(self.circuit["nVars"])
 
-        a_t = [bn128_Field(0)]*n_vars
-        b_t = [bn128_Field(0)]*n_vars
-        c_t = [bn128_Field(0)]*n_vars
+        a_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
+        b_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
+        c_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
 
         for s in range(n_vars):
             A = self.setup["vk_proof"]["polsA"][s]
@@ -103,10 +97,10 @@ class Groth:
         vk_proof_C = [None]*num_vars
         vk_proof_IC = [None]*n_pub_plus_n_out
 
-        kalfa = bn128_Field(5) #TODO : should turn into random
-        kbeta = bn128_Field(5) #TODO : should turn into random
-        kgamma = bn128_Field(5) #TODO : should turn into random
-        kdelta = bn128_Field(5) #TODO : should turn into random
+        kalfa = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
+        kbeta = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
+        kgamma = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
+        kdelta = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
 
         inv_delta = 1 / kdelta
         inv_gamma = 1 / kgamma
@@ -115,13 +109,10 @@ class Groth:
         g2 = G2()
 
         vk_proof_alfa_1 = mul_scalar(g1.g, kalfa).affine()
-        print(f"vk_proof_alfa_1 : {vk_proof_alfa_1}")
         vk_proof_beta_1 = mul_scalar(g1.g, kbeta).affine()
         vk_proof_delta_1 = mul_scalar(g1.g, kdelta).affine()
 
         vk_proof_beta_2 = mul_scalar(g2.g, kbeta).affine()
-        print(f"vk_proof_beta_2 : {vk_proof_beta_2[0].val1}, {vk_proof_beta_2[0].val2}, {vk_proof_beta_2[1].val1}, {vk_proof_beta_2[1].val2}, {vk_proof_beta_2[2].val1}, {vk_proof_beta_2[2].val2}")
-        
         vk_proof_delta_2 = mul_scalar(g2.g, kdelta).affine()
 
         vk_verifier_alfa_1 = mul_scalar(g1.g, kalfa).affine()
@@ -130,11 +121,7 @@ class Groth:
         vk_verifier_gamma_2 = mul_scalar(g2.g, kgamma).affine()
         vk_verifier_delta_2 = mul_scalar(g2.g, kdelta).affine()
 
-        print(f"vk_verifier_alfa_1 : {vk_verifier_alfa_1}")
-        print(f"vk_verifier_beta_2 : {vk_verifier_beta_2}")
         vk_verifier_alfabeta_12 = pairing(vk_verifier_alfa_1, vk_verifier_beta_2)
-        print(f"vk_verifier_alfabeta_12 : {vk_verifier_alfabeta_12}")
-
         for i in range(num_vars):
             A = mul_scalar(g1.g, a_t[i])
             vk_proof_A[i] = A
@@ -143,7 +130,7 @@ class Groth:
             B2 = mul_scalar(g2.g, b_t[i])
             vk_proof_B2[i] = B2
 
-        for i in range(self.setup["vk_proof"]["nPublic"]):
+        for i in range(self.setup["vk_proof"]["nPublic"] + 1):
             ps = ((a_t[i] * kbeta) + (b_t[i] * kalfa) + c_t[i]) * inv_gamma
             IC = mul_scalar(g1.g, ps)
             vk_proof_IC[i] = IC
@@ -152,7 +139,6 @@ class Groth:
             ps = ((a_t[i] * kbeta) + (b_t[i] * kalfa) + c_t[i]) * inv_delta
             C = mul_scalar(g1.g, ps)
             vk_proof_C[i] = C
-
         maxH = self.setup["vk_proof"]["domainSize"] + 1
         hExps = [None] * maxH
         zod = inv_delta * z_t
@@ -189,12 +175,21 @@ class Groth:
             "kgamma": kgamma,
             "kdelta": kdelta
             })
+        A = self.setup["vk_proof"]["A"]
+        self.setup["vk_proof"]["A"] = g1.multi_affine(A)
+        B1 = self.setup["vk_proof"]["B1"]
+        self.setup["vk_proof"]["B1"] = g1.multi_affine(B1)
+        B2 = self.setup["vk_proof"]["B2"]
+        self.setup["vk_proof"]["B2"] = g2.multi_affine(B2)
+        C = self.setup["vk_proof"]["C"]
+        self.setup["vk_proof"]["C"] = g1.multi_affine(C)
+        hExps = self.setup["vk_proof"]["hExps"]
+        self.setup["vk_proof"]["hExps"] = g1.multi_affine(hExps)
+        IC = self.setup["vk_verifier"]["IC"]
+        self.setup["vk_verifier"]["IC"] = g1.multi_affine(IC)
 
 if __name__ == "__main__":
-
     gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
     gr.calc_polynomials()
     at_list = gr.calc_values_at_T()
     gr.calc_encrypted_values_at_T()
-    print("-"*80, "setup")
-    print(gr.setup)

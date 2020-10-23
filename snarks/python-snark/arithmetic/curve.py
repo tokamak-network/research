@@ -1,7 +1,9 @@
 from .utils import mul_scalar
+from .curve_point import CurvePoint
 
 class Curve:
     g = None
+    field = None
 
     def __init__(self):
         pass
@@ -40,10 +42,11 @@ class Curve:
         pass
 
     def sub(self, p1, p2):
-        return p1 + self.neg(p2)
+        #return p1 + self.neg(p2)
+        return self.add(p1, self.neg(p2))
 
     def neg(self, p):
-        return [p[0], -p[1], p[2]]
+        return CurvePoint(self, [p[0], -p[1], p[2]])
 
     @classmethod
     def zero(cls):
@@ -73,7 +76,7 @@ class Curve:
         y1z1 = p[1] * p[2]
         res[2] = y1z1 + y1z1
 
-        return res
+        return CurvePoint(self, res)
 
     def mul_scalar(self, base, e):
         return mul_scalar(base, e)
@@ -90,10 +93,34 @@ class Curve:
             res[0] = p[0] * z2_inv
             res[1] = p[1] * z3_inv
             res[2] = p[0].one()
-            return res
+            return CurvePoint(self, res)
 
-    def multi_affine(arr):
-        pass
+    def multi_affine(self, arr):
+        acc_mul = [None] * (len(arr) + 1)
+        acc_mul[0] = self.field.one()
+        for i in range(len(arr)):
+            if arr[i] == None or arr[i][2] == self.field.zero():
+                acc_mul[i+1] = acc_mul[i]
+            else:
+                acc_mul[i+1] = acc_mul[i] * arr[i][2]
+
+        acc_mul[len(arr)] = acc_mul[len(arr)].inv()
+
+        for i in range(len(arr) - 1, -1, -1):
+            if arr[i] == None or arr[i][2] == self.field.zero():
+                acc_mul[i] = acc_mul[i+1]
+                arr[i] = self.zero()
+            else:
+                z_inv = acc_mul[i] * acc_mul[i+1]
+                acc_mul[i] = arr[i][2] * acc_mul[i+1]
+
+                z2_inv = z_inv.square()
+                z3_inv = z2_inv * z_inv
+
+                arr[i][0] = arr[i][0] * z2_inv
+                arr[i][1] = arr[i][1] * z3_inv
+                arr[i][2] = self.field.one()
+        return arr
     def eq(self, p1, p2):
         if p1[2] == p1[2].zero():
             return p2[2] == p2[2].zero()

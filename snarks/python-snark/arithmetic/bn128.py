@@ -1,7 +1,9 @@
 from .field import field_properties, bn128_Field, FQ, Field2, Field3
 from .curve import Curve
 from .curve_point import CurvePoint
+from .field_polynomial import FieldPolynomial
 from .utils import mul_scalar
+from functools import partial
 
 
 q = field_properties["bn128"]["field_modulus"]
@@ -9,16 +11,21 @@ r = field_properties["bn128"]["q"]
 
 class F1(FQ):
     field_modulus = field_properties["bn128"]["field_modulus"]
+    def __init__(self, val, field_modulus=field_properties["bn128"]["field_modulus"]):
+        super().__init__(val, field_properties["bn128"]["field_modulus"])
+
+class F1_P(FQ):
+    field_modulus = field_properties["bn128"]["q"]
+    def __init__(self, val, field_modulus=field_properties["bn128"]["q"]):
+        super().__init__(val, field_properties["bn128"]["q"])
 
 class F2(Field2):
     field_modulus = field_properties["bn128"]["field_modulus"]
     nonResidue = F1(21888242871839275222246405745257275088696311157297823662689037894645226208582)
-    @classmethod
-    def zero(cls):
-        return cls(F1.zero(), F1.zero())
-    @classmethod
-    def one(cls):
-        return cls(F1.one(), F1.zero())
+    def zero(self):
+        return type(self)(F1(0).zero(), F1(0).zero())
+    def one(self):
+        return type(self)(F1(0).one(), F1(0).zero())
 
 non_residue_F6 = F2(F1(9), F1(1))
 class F2_12(F2):
@@ -45,24 +52,41 @@ f12_one = F2_12(f6_one, f6_zero)
 
 f12 = f12_one
 
+class F12(F2_12):
+    nonResidue = non_residue_F6
+    def __init__(self, val1, val2, nonResidue=non_residue_F6):
+        self.val1 = F3(val1[0], val1[1], val1[2])
+        self.val2 = F3(val2[0], val2[1], val2[2])
+
+class PolField(FQ):
+    field_modulus = field_properties["bn128"]["q"]
+    def __init__(self, val, field_modulus=field_properties["bn128"]["q"]):
+        super().__init__(val, self.field_modulus)
+    def zero(self):
+        return PolField(0)
+
+class bn128_FieldPolynomial(FieldPolynomial):
+    field = PolField
 
 class G1(Curve):
+    field = F1(0)
     def __init__(self):
         self.g = CurvePoint(self, [F1(1), F1(2), F1(1)])
-    def zero(cls):
-        return [F1(0), F1(1), F1(0)]
+    def zero(self):
+        return CurvePoint(self, [F1(0), F1(1), F1(0)])
 
 class G2(Curve):
+    field = F2()
     def __init__(self):
-        self.g = g2 = CurvePoint(self, [
+        self.g = CurvePoint(self, [
             F2(F1(10857046999023057135944570762232829481370756359578518086990519993285655852781),
                 F1(11559732032986387107991004021392285783925812861821192530917403151452391805634)),
             F2(F1(8495653923123431417604973247489272438418190587263600148770280649306958101930),
                 F1(4082367875863433681332203403145435568316851327593401208105741076214120093531)),
             F2(F1(1), F1(0))
         ])
-    def zero(cls):
-        return [f2_zero, f2_one, f2_zero]
+    def zero(self):
+        return CurvePoint(self, [f2_zero, f2_one, f2_zero])
 
 class G1Point(CurvePoint):
     curve = G1

@@ -55,9 +55,8 @@ class FQ(object):
     n = None  # type: int
     field_modulus = None  # type: int
 
-    def __init__(self: T_FQ, val: IntOrFQ) -> None:
-        if self.field_modulus is None:
-            raise AttributeError("Field Modulus hasn't been specified")
+    def __init__(self: T_FQ, val: IntOrFQ, field_modulus) -> None:
+        self.field_modulus = field_modulus
 
         if isinstance(val, FQ):
             self.n = val.n
@@ -68,6 +67,8 @@ class FQ(object):
                 "Expected an int or FQ object, but got object of type {}"
                 .format(type(val))
             )
+        self.bitLength = len(bin(self.field_modulus)) - 2
+        self.half = self.field_modulus >> 1
 
     def __add__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         if isinstance(other, FQ):
@@ -80,7 +81,7 @@ class FQ(object):
                 .format(type(other))
             )
 
-        return type(self)((self.n + on) % self.field_modulus)
+        return type(self)((self.n + on) % self.field_modulus, self.field_modulus)
 
     def __mul__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         if isinstance(other, FQ):
@@ -93,7 +94,7 @@ class FQ(object):
                 .format(type(other))
             )
 
-        return type(self)((self.n * on) % self.field_modulus)
+        return type(self)((self.n * on) % self.field_modulus, self.field_modulus)
 
     def __rmul__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         return self * other
@@ -112,7 +113,7 @@ class FQ(object):
                 .format(type(other))
             )
 
-        return type(self)((on - self.n) % self.field_modulus)
+        return type(self)((on - self.n) % self.field_modulus, self.field_modulus)
 
     def __sub__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         if isinstance(other, FQ):
@@ -125,7 +126,7 @@ class FQ(object):
                 .format(type(other))
             )
 
-        return type(self)((self.n - on) % self.field_modulus)
+        return type(self)((self.n - on) % self.field_modulus, self.field_modulus)
 
     def __mod__(self: T_FQ, other: IntOrFQ) -> T_FQ:
         raise NotImplementedError("Modulo Operation not yet supported by fields")
@@ -142,7 +143,8 @@ class FQ(object):
             )
 
         return type(self)(
-            self.n * prime_field_inv(on, self.field_modulus) % self.field_modulus
+            self.n * prime_field_inv(on, self.field_modulus) % self.field_modulus,
+            self.field_modulus
         )
 
     def __truediv__(self: T_FQ, other: IntOrFQ) -> T_FQ:
@@ -160,7 +162,8 @@ class FQ(object):
             )
 
         return type(self)(
-            prime_field_inv(self.n, self.field_modulus) * on % self.field_modulus
+            prime_field_inv(self.n, self.field_modulus) * on % self.field_modulus,
+            self.field_modulus
         )
 
     def __rtruediv__(self: T_FQ, other: IntOrFQ) -> T_FQ:
@@ -168,9 +171,9 @@ class FQ(object):
 
     def __pow__(self: T_FQ, other: int) -> T_FQ:
         if other == 0:
-            return type(self)(1)
+            return type(self)(1, self.field_modulus)
         elif other == 1:
-            return type(self)(self.n)
+            return type(self)(self.n, self.field_modulus)
         elif other % 2 == 0:
             return (self * self) ** (other // 2)
         else:
@@ -186,18 +189,31 @@ class FQ(object):
                 "Expected an int or FQ object, but got object of type {}"
                 .format(type(other))
             )
+    
+    def __ge__(self, other):
+        aa = self.n - self.field_modulus if (self.n > self.half) else self.n
+        bb = other.n - self.field_modulus if (other.n > self.half) else other.n
+        return aa >= bb
+    
+    def __le__(self, other):
+        aa = self.n - self.field_modulus if (self.n > self.half) else self.n
+        bb = other.n - self.field_modulus if (other.n > self.half) else other.n
+        return aa <= bb
 
     def __ne__(self: T_FQ, other: IntOrFQ) -> bool:
         return not self == other
 
     def __neg__(self: T_FQ) -> T_FQ:
-        return type(self)(-self.n)
+        return type(self)(-self.n, self.field_modulus)
 
     def __repr__(self: T_FQ) -> str:
         return repr(self.n)
 
     def __int__(self: T_FQ) -> int:
         return self.n
+
+    def neg(self):
+        return -self
 
     @cached_property
     def sgn0(self: T_FQ) -> int:
@@ -212,35 +228,16 @@ class FQ(object):
         """
         return self.n % 2
 
-    @classmethod
-    def one(cls: Type[T_FQ]) -> T_FQ:
-        return cls(1)
+    def one(self) -> T_FQ:
+        return type(self)(1, self.field_modulus)
 
-    @classmethod
-    def zero(cls: Type[T_FQ]) -> T_FQ:
-        return cls(0)
+    def zero(self) -> T_FQ:
+        return type(self)(0, self.field_modulus)
 
     def square(self):
-        #self.n = self.n * self.n % self.field_modulus
-        #return self
-        return type(self)(self.n * self.n % self.field_modulus)
+        return type(self)(self.n * self.n % self.field_modulus, self.field_modulus)
 
     def inv(self):
-        """
-        assert(a, "Division by zero");
-
-        let t = 0n;
-        let r = this.p;
-        let newt = 1n;
-        let newr = a % this.p;
-        while (newr) {
-            let q = r/newr;
-            [t, newt] = [newt, t-q*newt];
-            [r, newr] = [newr, r-q*newr];
-        }
-        if (t<0n) t += this.p;
-        return t;
-        """
         t = 0
         r = self.field_modulus
         newt = 1
@@ -251,8 +248,8 @@ class FQ(object):
             [r, newr] = [newr, r - q*newr]
         if t < 0:
             t += self.field_modulus
-        return type(self)(t)
-
+        return type(self)(t, self.field_modulus)
+        
 class FQP(object):
     """
     A class for elements in polynomial extension fields

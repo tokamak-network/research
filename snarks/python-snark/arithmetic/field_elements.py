@@ -20,6 +20,7 @@ from typing import (  # noqa: F401
 from .utils import (
     deg,
     prime_field_inv,
+    random
 )
 
 if TYPE_CHECKING:
@@ -249,7 +250,7 @@ class FQ(object):
         if t < 0:
             t += self.field_modulus
         return type(self)(t, self.field_modulus)
-        
+
 class FQP(object):
     """
     A class for elements in polynomial extension fields

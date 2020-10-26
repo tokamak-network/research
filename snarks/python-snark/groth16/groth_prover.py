@@ -86,7 +86,8 @@ def calculate_H(vk_proof, witness):
     return h_s
 
 if __name__ == "__main__":
-    gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
+    #gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
+    gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/circuit/circuit.r1cs")
     gr.calc_polynomials()
     at_list = gr.calc_values_at_T()
     gr.calc_encrypted_values_at_T()

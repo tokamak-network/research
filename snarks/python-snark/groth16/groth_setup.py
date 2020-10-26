@@ -2,20 +2,24 @@ import os
 import json
 
 from ..arithmetic import bn128_Field, bn128_FieldPolynomial, log2, mul_scalar, G1, G2, pairing, FQ, field_properties
+from ..r1csfile import R1cs
 
 class Groth:
-    def __init__(self, circuit_path):
+    #def __init__(self, circuit_path):
+    def __init__(self, r1cs_path):
+        #with open(circuit_path) as json_file:
+            #self.circuit = json.load(json_file)
+        self.r1cs = R1cs(r1cs_path)
+        #self.circuit = r1cs.load()
+        #self.r1cs.load()
 
-        with open(circuit_path) as json_file:
-            self.circuit = json.load(json_file)
-
-        num_vars = int(self.circuit["nVars"])
+        num_vars = int(self.r1cs.nVars)
 
         self.setup = {
             "vk_proof" : {
                 "protocol" : "groth",
-                "nVars"    : int(self.circuit["nVars"]),
-                "nPublic"  : int(self.circuit["nPubInputs"] + self.circuit["nOutputs"]),
+                "nVars"    : int(self.r1cs.nVars),
+                "nPublic"  : int(self.r1cs.nPubInputs + self.r1cs.nOutputs),
                 "domainBits" : 0,
                 "domainSize" : 0,
                 "polsA" : [dict() for x in range(num_vars)],
@@ -24,11 +28,11 @@ class Groth:
             },
             "vk_verifier": {
                 "protocol" : "groth",
-                "nPublic"  : int(self.circuit["nPubInputs"] + self.circuit["nOutputs"])
+                "nPublic"  : int(self.r1cs.nPubInputs + self.r1cs.nOutputs)
             },
             "toxic" : {}
         }
-        total_domain = int(self.circuit["nConstraints"]) + int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"])
+        total_domain = int(self.r1cs.nConstraints) + int(self.r1cs.nPubInputs) + int(self.r1cs.nOutputs)
         self.setup["vk_proof"]["domainBits"] = log2(total_domain) + 1
         self.setup["vk_proof"]["domainSize"] = 1 << self.setup["vk_proof"]["domainBits"]
 
@@ -39,20 +43,29 @@ class Groth:
 
 
     def calc_polynomials(self):
-        num_constraints = len(self.circuit["constraints"])
+        num_constraints = len(self.r1cs.constraints)
         # consts = self.circuit["constraints"]
         for c in range(num_constraints):
-            A = self.circuit["constraints"][c][0]
-            B = self.circuit["constraints"][c][1]
-            C = self.circuit["constraints"][c][2]
+            A = self.r1cs.constraints[c][0]
+            B = self.r1cs.constraints[c][1]
+            C = self.r1cs.constraints[c][2]
             for s in A:
-                self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["q"]) if A[s] != None else None
+                #if A[s] != None:
+                if s in A:
+                    self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["q"])
+                #self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["q"]) if A[s] != None else None
             for s in B:
-                self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["q"]) if B[s] != None else None
+                #if B[s] != None:
+                if s in B:
+                    self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["q"])
+                #self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["q"]) if B[s] != None else None
             for s in C:
-                self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["q"]) if C[s] != None else None
+                #if C[s] != None:
+                if s in C:
+                    self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["q"])
+                #self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["q"]) if C[s] != None else None
 
-        n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"])
+        n_pub_plus_n_out = int(self.r1cs.nPubInputs) + int(self.r1cs.nOutputs)
         for i in range(n_pub_plus_n_out+1):
             self.setup["vk_proof"]["polsA"][i][num_constraints+i] = FQ(1, field_properties["bn128"]["q"]) # bn128_Field
 
@@ -62,7 +75,7 @@ class Groth:
         z_t = self.PF.compute_vanishing_polynomial(domain_bits, toxic_t)
         u = self.PF.evaluate_lagrange_polynomials(domain_bits, toxic_t)
 
-        n_vars = int(self.circuit["nVars"])
+        n_vars = int(self.r1cs.nVars)
 
         a_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
         b_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
@@ -88,8 +101,8 @@ class Groth:
 
 
     def calc_encrypted_values_at_T(self):
-        num_vars = int(self.circuit["nVars"])
-        n_pub_plus_n_out = int(self.circuit["nPubInputs"]) + int(self.circuit["nOutputs"]) + 1
+        num_vars = int(self.r1cs.nVars)
+        n_pub_plus_n_out = int(self.r1cs.nPubInputs) + int(self.r1cs.nOutputs) + 1
         a_t, b_t, c_t, z_t = self.calc_values_at_T()
         vk_proof_A = [None]*num_vars
         vk_proof_B1 = [None]*num_vars
@@ -189,7 +202,8 @@ class Groth:
         self.setup["vk_verifier"]["IC"] = g1.multi_affine(IC)
 
 if __name__ == "__main__":
-    gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
+    #gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
+    gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/circuit/circuit.r1cs")
     gr.calc_polynomials()
     at_list = gr.calc_values_at_T()
     gr.calc_encrypted_values_at_T()

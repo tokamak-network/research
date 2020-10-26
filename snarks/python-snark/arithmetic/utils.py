@@ -5,6 +5,7 @@ from typing import (
     Union,
     TYPE_CHECKING,
 )
+from os import urandom
 
 def log2(val: int) -> "Int":
     if val & 0xFFFF0000 != 0:
@@ -111,3 +112,6 @@ def exp(base, e):
         if n[i]:
             res = res * base
     return res
+
+def random():
+    return int.from_bytes(os.urandom(32), "little")

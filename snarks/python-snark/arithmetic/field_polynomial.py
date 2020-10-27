@@ -1,12 +1,9 @@
 from .field import FQ, bn128_Field
-from .field_properties import field_properties
 from .utils import log2, mul_scalar
 
 class FieldPolynomial:
     field = None
     def __init__(self):
-        pass
-        
         if self.field is None:
             raise AttributeError("Field hasn't been specified")
         self.s = 1

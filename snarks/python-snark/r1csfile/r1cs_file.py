@@ -2,8 +2,6 @@ from ..arithmetic import FQ
 
 class R1cs:
     def __init__(self, path):
-        #self.path = path
-        #self.f = open(path, "rb")
         self.load(path)
 
     def read_int32(self):

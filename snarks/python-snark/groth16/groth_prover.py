@@ -10,9 +10,10 @@ def gen_proof(vk_proof, witness):
     g2 = G2()
     pol = bn128_FieldPolynomial()
 
-    # TODO: random
-    r = F1_P(5)
-    s = F1_P(5)
+    #r = F1_P(5)
+    #s = F1_P(5)
+    r = F1_P(0).random()
+    s = F1_P(0).random()
 
     proof = {}
     proof["pi_a"] = g1.zero()
@@ -86,7 +87,6 @@ def calculate_H(vk_proof, witness):
     return h_s
 
 if __name__ == "__main__":
-    #gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
     gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/circuit/circuit.r1cs")
     gr.calc_polynomials()
     at_list = gr.calc_values_at_T()

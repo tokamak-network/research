@@ -5,7 +5,7 @@ from typing import (
     Union,
     TYPE_CHECKING,
 )
-from os import urandom
+import os
 
 def log2(val: int) -> "Int":
     if val & 0xFFFF0000 != 0:

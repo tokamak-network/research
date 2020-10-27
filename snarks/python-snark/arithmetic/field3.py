@@ -3,8 +3,7 @@ from .utils import mul_scalar, exp
 
 class Field3:
     field_modulus = None
-    nonResidue = None
-    one = None
+    non_residue = None
     val1 = None
     val2 = None
     def __init__(self, val1, val2, val3):
@@ -25,8 +24,8 @@ class Field3:
         b = self.val2 * other.val2
         c = self.val3 * other.val3
         return type(self)(
-            a + self._mulByNonResidue((self.val2 + self.val3) * (other.val2 + other.val3) - (b + c)),
-            (self.val1 + self.val2) * (other.val1 + other.val2) - (a + b) + self._mulByNonResidue(c),
+            a + self.mul_by_non_residue((self.val2 + self.val3) * (other.val2 + other.val3) - (b + c)),
+            (self.val1 + self.val2) * (other.val1 + other.val2) - (a + b) + self.mul_by_non_residue(c),
             (self.val1 + self.val3) * (other.val1 + other.val3) - (a + c) + b
         )
 
@@ -49,8 +48,8 @@ class Field3:
     def __repr__(self):
         return repr("[" + str(self.val1) + ", " + str(self.val2) + ", " + str(self.val3) + "]")
 
-    def _mulByNonResidue(self, v):
-        return self.nonResidue * v
+    def mul_by_non_residue(self, v):
+        return self.non_residue * v
 
     def double(self):
         return self + self
@@ -65,10 +64,10 @@ class Field3:
         t3 = self.val1 * self.val2
         t4 = self.val1 * self.val3
         t5 = self.val2 * self.val3
-        c0 = t0 - self._mulByNonResidue(t5)
-        c1 = self._mulByNonResidue(t2) - t3
+        c0 = t0 - self.mul_by_non_residue(t5)
+        c1 = self.mul_by_non_residue(t2) - t3
         c2 = t1 - t4
-        t6 = ((self.val1 * c0) + self._mulByNonResidue((self.val3 * c1) + (self.val2 * c2))).inv()
+        t6 = ((self.val1 * c0) + self.mul_by_non_residue((self.val3 * c1) + (self.val2 * c2))).inv()
         return [
             t6 * c0,
             t6 * c1,
@@ -84,8 +83,8 @@ class Field3:
         s3 = bc + bc
         s4 = self.val3.square()
         return [
-            s0 + self._mulByNonResidue(s3),
-            s1 + self._mulByNonResidue(s4),
+            s0 + self.mul_by_non_residue(s3),
+            s1 + self.mul_by_non_residue(s4),
             s1 + s2 + s3 - (s0 + s4)
         ]
 

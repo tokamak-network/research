@@ -5,22 +5,22 @@ from itertools import chain
 from ..arithmetic import FQ
 
 def fn_error(code: int, pstr: int, a: int, b: int, c: int, d: int):
-    print(f"pywasm fn_error - ", code, pstr, a, b, c, d)
+    #print(f"pywasm fn_error - ", code, pstr, a, b, c, d)
     raise Exception(code, pstr, a, b, c, d)
 def fn_log(a: int):
-    print(f'fn_log: {a}')
+    #print(f'fn_log: {a}')
     pass
 def fn_logGetSignal(signal: int, pVal: int):
-    print(f'fn_logGetSignal: {signal}, {pVal}')
+    #print(f'fn_logGetSignal: {signal}, {pVal}')
     pass
 def fn_logSetSignal(signal: int, pVal: int):
-    print(f'logSetSignal: {signal}, {pVal}')
+    #print(f'logSetSignal: {signal}, {pVal}')
     pass
 def fn_logStartComponent(cIdx: int):
-    print(f'logStartComponent: {cIdx}')
+    #print(f'logStartComponent: {cIdx}')
     pass
 def fn_logFinishComponent(cIdx: int):
-    print(f'logFinishComponent: {cIdx}')
+    #print(f'logFinishComponent: {cIdx}')
     pass
 
 def p2str(p):
@@ -31,9 +31,20 @@ def p2str(p):
         buf.append(i8[p+i])
         i += 1
     return ''.join(map(unichr, buf))
+    
 class Field1(FQ):
     def __init__(self, val, field_modulus):
+        self.field_modulus = field_modulus
         super().__init__(val, field_modulus)
+
+    def new(self, val):
+        return FQ(val, self.field_modulus)
+
+    def one(self):
+        return type(self)(1, self.field_modulus)
+
+    def zero(self):
+        return type(self)(0, self.field_modulus)
 
 class Calculator:
     def __init__(self, wasm_path):
@@ -65,13 +76,16 @@ class Calculator:
         for i in range(len(arr)):
             acc = acc*0x100000000 + arr[i]
         self.prime = acc
-        self.fr = Field1(1, self.prime)
+        self.fr = Field1(0, self.prime)
         self.mask32 = 0xFFFFFFFF
         self.nvars = self.instance.exports.getNVars()
         self.n64 = (self.fr.bitLength - 1) // 64 + 1
 
-        self.r = Field1(1 << (self.n64*64), self.prime)
+        self.r = self.fr.new(1 << (self.n64*64))
         self.rinv = self.r.inv()
+
+    def fr(self):
+        return 
 
     def get_mem_uint32(self, pos):
         buf = self.i32[pos]
@@ -103,27 +117,28 @@ class Calculator:
             acc = 0
             for i in range(len(arr)):
                 acc = acc*0x100000000 + arr[i]
-            res = Field1(acc, self.prime)
+            res = self.fr.new(acc)
             if self.get_mem_uint32(idx + 1) & 0x40000000:
                 return self.from_montgomery(res)
             else:
                 return res
         else:
             if self.get_mem_uint32(idx) & 0x80000000:
-                return Field1(self.get_mem_uint32(idx) - 0x100000000, self.prime)
+                return self.fr.new(self.get_mem_uint32(idx) - 0x100000000)
             else:
-                return Field1(self.get_mem_uint32(idx), self.prime)
+                return self.fr.new(self.get_mem_uint32(idx))
 
     def from_montgomery(self, n):
         return self.rinv * n
 
     def set_fr(self, p, v):
-        v = Field1(v, self.prime)
-        min_short = Field1(0x80000000, self.prime).neg()
-        max_short = Field1(0x7FFFFFFF, self.prime)
+        v = self.fr.new(v)
+        min_short = self.fr.new(0x80000000).neg()
+        max_short = self.fr.new(0x7FFFFFFF)
         if v >= min_short and v <= max_short:
             a = None
             if v >= self.fr.zero():
+            #if v >= 0:
                 a = v
             else:
                 a = v - min_short

@@ -3,8 +3,7 @@ from .utils import mul_scalar, exp
 
 class Field2:
     field_modulus = None
-    nonResidue = None
-    one = None
+    non_residue = None
     val1 = None
     val2 = None
 
@@ -25,7 +24,10 @@ class Field2:
     def __mul__(self, other):
         a = self.val1 * other.val1
         b = self.val2 * other.val2
-        return type(self)(a + self._mulByNonResidue(b), (self.val1 + self.val2) * (other.val1 + other.val2) - (a + b))
+        return type(self)(
+            a + self.mul_by_non_residue(b),
+            (self.val1 + self.val2) * (other.val1 + other.val2) - (a + b)
+        )
 
     def __div__(self, other):
         return self * other.inv()
@@ -41,8 +43,8 @@ class Field2:
         else:
             raise ValueError("Field index error", idx)
 
-    def _mulByNonResidue(self, v):
-        return self.nonResidue * v
+    def mul_by_non_residue(self, v):
+        return self.non_residue * v
 
     def double(self):
         return self + self
@@ -56,14 +58,14 @@ class Field2:
     def inv(self):
         t0 = self.val1.square()
         t1 = self.val2.square()
-        t2 = t0 - self._mulByNonResidue(t1)
+        t2 = t0 - self.mul_by_non_residue(t1)
         t3 = t2.inv()
         return type(self)(self.val1 * t3, -(self.val2 * t3))
 
     def square(self):
         a = self.val1 * self.val2
-        b = (self.val1 + self.val2) * (self.val1 + self._mulByNonResidue(self.val2)) 
-        c = (a + self._mulByNonResidue(a))
+        b = (self.val1 + self.val2) * (self.val1 + self.mul_by_non_residue(self.val2)) 
+        c = (a + self.mul_by_non_residue(a))
         d = a + a
         return type(self)(b - c, d)
 

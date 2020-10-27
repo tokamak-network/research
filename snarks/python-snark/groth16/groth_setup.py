@@ -5,13 +5,8 @@ from ..arithmetic import bn128_Field, bn128_FieldPolynomial, log2, mul_scalar, G
 from ..r1csfile import R1cs
 
 class Groth:
-    #def __init__(self, circuit_path):
     def __init__(self, r1cs_path):
-        #with open(circuit_path) as json_file:
-            #self.circuit = json.load(json_file)
         self.r1cs = R1cs(r1cs_path)
-        #self.circuit = r1cs.load()
-        #self.r1cs.load()
 
         num_vars = int(self.r1cs.nVars)
 
@@ -36,38 +31,30 @@ class Groth:
         self.setup["vk_proof"]["domainBits"] = log2(total_domain) + 1
         self.setup["vk_proof"]["domainSize"] = 1 << self.setup["vk_proof"]["domainBits"]
 
-        #TODO : need random function
-        self.setup["toxic"]["t"] = FQ(5, field_properties["bn128"]["q"]) # bn128_Field
+        #self.setup["toxic"]["t"] = FQ(5, field_properties["bn128"]["r"])
+        self.setup["toxic"]["t"] = FQ(0, field_properties["bn128"]["r"]).random()
 
         self.PF = bn128_FieldPolynomial()
 
-
     def calc_polynomials(self):
         num_constraints = len(self.r1cs.constraints)
-        # consts = self.circuit["constraints"]
         for c in range(num_constraints):
             A = self.r1cs.constraints[c][0]
             B = self.r1cs.constraints[c][1]
             C = self.r1cs.constraints[c][2]
             for s in A:
-                #if A[s] != None:
                 if s in A:
-                    self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["q"])
-                #self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["q"]) if A[s] != None else None
+                    self.setup["vk_proof"]["polsA"][int(s)][c] = FQ(int(A[s]), field_properties["bn128"]["r"])
             for s in B:
-                #if B[s] != None:
                 if s in B:
-                    self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["q"])
-                #self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["q"]) if B[s] != None else None
+                    self.setup["vk_proof"]["polsB"][int(s)][c] = FQ(int(B[s]), field_properties["bn128"]["r"])
             for s in C:
-                #if C[s] != None:
                 if s in C:
-                    self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["q"])
-                #self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["q"]) if C[s] != None else None
+                    self.setup["vk_proof"]["polsC"][int(s)][c] = FQ(int(C[s]), field_properties["bn128"]["r"])
 
         n_pub_plus_n_out = int(self.r1cs.nPubInputs) + int(self.r1cs.nOutputs)
         for i in range(n_pub_plus_n_out+1):
-            self.setup["vk_proof"]["polsA"][i][num_constraints+i] = FQ(1, field_properties["bn128"]["q"]) # bn128_Field
+            self.setup["vk_proof"]["polsA"][i][num_constraints+i] = FQ(1, field_properties["bn128"]["r"]) # bn128_Field
 
     def calc_values_at_T(self):
         domain_bits = self.setup["vk_proof"]["domainBits"]
@@ -77,9 +64,9 @@ class Groth:
 
         n_vars = int(self.r1cs.nVars)
 
-        a_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
-        b_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
-        c_t = [FQ(0, field_properties["bn128"]["q"])]*n_vars
+        a_t = [FQ(0, field_properties["bn128"]["r"])]*n_vars
+        b_t = [FQ(0, field_properties["bn128"]["r"])]*n_vars
+        c_t = [FQ(0, field_properties["bn128"]["r"])]*n_vars
 
         for s in range(n_vars):
             A = self.setup["vk_proof"]["polsA"][s]
@@ -110,10 +97,14 @@ class Groth:
         vk_proof_C = [None]*num_vars
         vk_proof_IC = [None]*n_pub_plus_n_out
 
-        kalfa = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
-        kbeta = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
-        kgamma = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
-        kdelta = FQ(5, field_properties["bn128"]["q"]) #TODO : should turn into random
+        #kalfa = FQ(5, field_properties["bn128"]["r"])
+        #kbeta = FQ(5, field_properties["bn128"]["r"])
+        #kgamma = FQ(5, field_properties["bn128"]["r"])
+        #kdelta = FQ(5, field_properties["bn128"]["r"])
+        kalfa = FQ(0, field_properties["bn128"]["r"]).random()
+        kbeta = FQ(0, field_properties["bn128"]["r"]).random()
+        kgamma = FQ(0, field_properties["bn128"]["r"]).random()
+        kdelta = FQ(0, field_properties["bn128"]["r"]).random()
 
         inv_delta = 1 / kdelta
         inv_gamma = 1 / kgamma
@@ -152,6 +143,7 @@ class Groth:
             ps = ((a_t[i] * kbeta) + (b_t[i] * kalfa) + c_t[i]) * inv_delta
             C = mul_scalar(g1.g, ps)
             vk_proof_C[i] = C
+
         maxH = self.setup["vk_proof"]["domainSize"] + 1
         hExps = [None] * maxH
         zod = inv_delta * z_t
@@ -188,6 +180,7 @@ class Groth:
             "kgamma": kgamma,
             "kdelta": kdelta
             })
+
         A = self.setup["vk_proof"]["A"]
         self.setup["vk_proof"]["A"] = g1.multi_affine(A)
         B1 = self.setup["vk_proof"]["B1"]
@@ -202,7 +195,6 @@ class Groth:
         self.setup["vk_verifier"]["IC"] = g1.multi_affine(IC)
 
 if __name__ == "__main__":
-    #gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/test.r1cs.json")
     gr = Groth(os.path.dirname(os.path.realpath(__file__)) + "/circuit/circuit.r1cs")
     gr.calc_polynomials()
     at_list = gr.calc_values_at_T()

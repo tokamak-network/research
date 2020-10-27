@@ -1,41 +1,40 @@
-from .field import field_properties, bn128_Field, FQ, Field2, Field3
+from .field import bn128_Field, FQ, Field2, Field3, field_properties
 from .curve import Curve
 from .curve_point import CurvePoint
 from .field_polynomial import FieldPolynomial
 from .utils import mul_scalar
 from functools import partial
 
-
-q = field_properties["bn128"]["field_modulus"]
-r = field_properties["bn128"]["q"]
-
 class F1(FQ):
-    field_modulus = field_properties["bn128"]["field_modulus"]
-    def __init__(self, val, field_modulus=field_properties["bn128"]["field_modulus"]):
-        super().__init__(val, field_properties["bn128"]["field_modulus"])
-
-class F1_P(FQ):
     field_modulus = field_properties["bn128"]["q"]
     def __init__(self, val, field_modulus=field_properties["bn128"]["q"]):
         super().__init__(val, field_properties["bn128"]["q"])
 
+class F1_P(FQ):
+    field_modulus = field_properties["bn128"]["r"]
+    def __init__(self, val, field_modulus=field_properties["bn128"]["r"]):
+        super().__init__(val, field_properties["bn128"]["r"])
+
 class F2(Field2):
-    field_modulus = field_properties["bn128"]["field_modulus"]
-    nonResidue = F1(21888242871839275222246405745257275088696311157297823662689037894645226208582)
-    def zero(self):
-        return type(self)(F1(0).zero(), F1(0).zero())
-    def one(self):
-        return type(self)(F1(0).one(), F1(0).zero())
+    field_modulus = field_properties["bn128"]["q"]
+    non_residue = F1(field_properties["bn128"]["non_residue"])
+
+    @classmethod
+    def zero(cls):
+        return cls(F1.zero(), F1.zero())
+    @classmethod
+    def one(cls):
+        return cls(F1.one(), F1.zero())
 
 non_residue_F6 = F2(F1(9), F1(1))
 class F2_12(F2):
-    nonResidue = non_residue_F6
-    def _mulByNonResidue(self, v):
-        return type(self.val1)(self.nonResidue * v[2], v[0], v[1])
+    non_residue = non_residue_F6
+    def mul_by_non_residue(self, v):
+        return type(self.val1)(self.non_residue * v[2], v[0], v[1])
 
 class F3(Field3):
-    field_modulus = field_properties["bn128"]["field_modulus"]
-    nonResidue = non_residue_F6
+    field_modulus = field_properties["bn128"]["q"]
+    non_residue = non_residue_F6
     @classmethod
     def zero(cls):
         return F3(F1.zero(), F1.zero(), F1.zero())
@@ -47,20 +46,17 @@ f2_zero = F2(F1(0), F1(0))
 f2_one = F2(F1(1), F1(0))
 f6_zero = F3(F2(F1(0), F1(0)), F2(F1(0), F1(0)), F2(F1(0), F1(0)))
 f6_one = F3(F2(F1(1), F1(0)), F2(F1(0), F1(0)), F2(F1(0), F1(0)))
-f12_zero = F2_12(f6_zero, f6_zero)
 f12_one = F2_12(f6_one, f6_zero)
 
-f12 = f12_one
-
 class F12(F2_12):
-    nonResidue = non_residue_F6
-    def __init__(self, val1, val2, nonResidue=non_residue_F6):
+    non_residue = non_residue_F6
+    def __init__(self, val1, val2, non_residue=non_residue_F6):
         self.val1 = F3(val1[0], val1[1], val1[2])
         self.val2 = F3(val2[0], val2[1], val2[2])
 
 class PolField(FQ):
-    field_modulus = field_properties["bn128"]["q"]
-    def __init__(self, val, field_modulus=field_properties["bn128"]["q"]):
+    field_modulus = field_properties["bn128"]["r"]
+    def __init__(self, val, field_modulus=field_properties["bn128"]["r"]):
         super().__init__(val, self.field_modulus)
     def zero(self):
         return PolField(0)
@@ -124,7 +120,7 @@ def prepare_pairing():
     twist = F2(F1(9), F1(1))
     twist_coeff_b = twist.inv().mul_scalar(coef_b)
 
-    frobenius_coeffs_c1_1 = F1(21888242871839275222246405745257275088696311157297823662689037894645226208582)
+    frobenius_coeffs_c1_1 = F1(field_properties["bn128"]["non_residue"])
     twist_mul_by_q_X = F2(
         F1(21575463638280843010398324269430826099269044274347216827212613867836435027261),
         F1(10307601595873709700152284273816112264069230130616436755625194854815875713954)

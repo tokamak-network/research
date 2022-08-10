@@ -49,7 +49,7 @@ import * as binFileUtils from "@iden3/binfileutils";
 
 import { getCurveFromQ as getCurve } from "./curves.js";
 import { log2 } from "./misc.js";
-
+/* 
 export async function writeHeader(fd, zkey) {
 
     // Write the header
@@ -177,7 +177,7 @@ export async function writeZKey(fileName, zkey) {
     }
 
 }
-
+ */
 export async function writeG1(fd, curve, p) {
     const buff = new Uint8Array(curve.G1.F.n8*2);
     curve.G1.toRprLEM(buff, 0, p);
@@ -202,7 +202,7 @@ export async function readG2(fd, curve, toObject) {
     return toObject ? curve.G2.toObject(res) : res;
 }
 
-
+/* 
 export async function readHeader(fd, sections, toObject) {
     // Read Header
     /////////////////////
@@ -218,9 +218,6 @@ export async function readHeader(fd, sections, toObject) {
         throw new Error("Protocol not supported: ");
     }        
 }
-
-
-
 
 async function readHeaderGroth16(fd, sections, toObject) {
     const zkey = {};
@@ -253,10 +250,49 @@ async function readHeaderGroth16(fd, sections, toObject) {
     return zkey;
 
 }
+ */
 
+export async function readRSParams(fd, sections) {
+    const urs = {};
 
+    urs.protocol = "groth16";
 
+    // Read parameters
+    /////////////////////
+    await binFileUtils.startReadUniqueSection(fd, sections, 2);
+    // Group parameters
+    const n8q = await fd.readULE32();
+    urs.n8q = n8q;
+    urs.q = await binFileUtils.readBigInt(fd, n8q);
 
+    const n8r = await fd.readULE32();
+    urs.n8r = n8r;
+    urs.r = await binFileUtils.readBigInt(fd, n8r);
+    urs.curve = await getCurve(urs.q);
+    
+    // Instruction set constants
+    const s_D = await fd.readULE32();
+    urs.s_D = s_D
+    urs.r1cs = new Array(s_D)
+    for(var i=0; i<s_D; i++){
+        urs.r1cs[i].m = await fdRS.readULE32()
+        urs.r1cs[i].mPublic = await fdRS.readULE32()
+        urs.r1cs[i].mPrivate = urs.r1cs[i].m - urs.r1cs[i].mPublic
+    }
+
+    // QAP constants
+    urs.n = await fd.readULE32()
+    urs.s_max = await fd.readULE32()
+    urs.omega_x = await fd.readULE32()
+    urs.omega_y = await fd.readULE32()
+
+    await binFileUtils.endReadSection(fd);
+
+    return urs;
+
+}
+
+/* 
 async function readHeaderPlonk(fd, sections, toObject) {
     const zkey = {};
 
@@ -296,6 +332,115 @@ async function readHeaderPlonk(fd, sections, toObject) {
 
     return zkey;
 }
+ */
+
+export async function readRS(fd, sections, rsParam, toObject) {
+    const curve = rsParam.curve
+    // const Fr = curve.Fr
+    // const Rr = Scalar.mod(Scalar.shl(1, rsParam.n8r*8), rsParam.r)
+    // const Rri = Fr.inv(Rr);
+    // const Rri2 = Fr.mul(Rri, Rri);
+    const rsContent = {}
+
+    // Read sigma_G section
+    ///////////
+    await binFileUtils.startReadUniqueSection(fd, sections, 3);
+    rsContent.sigma_G.vk1_alpha_u = await readG1(fd, curve, toObject)
+    rsContent.sigma_G.vk1_alpha_v = await readG1(fd, curve, toObject)
+    rsContent.sigma_G.vk1_gamma_a = await readG1(fd, curve, toObject)
+    
+    let vk1_xy_pows = Array.from(Array(n), () => new Array(s_max))
+    for(var i = 0; i < n; i++) {
+        for(var j = 0; j < s_max; j++){
+            vk1_xy_pows[i][j] = await readG1(fd, curve, toObject)
+            // vk1_xy_pows[i][j] = G1*(x^i * y^j)
+        }
+    }
+    rsContent.sigma_G.vk1_xy_pows = vk1_xy_pows
+
+    let vk1_xy_pows_tg = Array.from(Array(n-1), () => new Array(s_max-1))
+    for(var i = 0; i < n-1; i++) {
+        for(var j=0; j<s_max-1; j++){
+            vk1_xy_pows_tg[i][j] = await readG1(fd, curve, toObject)
+            // vk1_xy_pows_tg[i][j] = G1*(x^i * y^j)*t(x)*inv(gamma_a)
+        }
+    }
+    rsContent.sigma_G.vk1_xy_pows_tg = vk1_xy_pows_tg
+    await binFileUtils.endReadSection(fd);
+    // End of reading sigma_G
+
+    // Read sigma_H section
+    ///////////
+    await binFileUtils.startReadUniqueSection(fd, sections, 4);
+    rsContent.sigma_H.vk2_alpha_u = await readG2(fd, curve, toObject)
+    rsContent.sigma_H.vk2_gamma_z = await readG2(fd, curve, toObject)
+    rsContent.sigma_H.vk2_gamma_a = await readG2(fd, curve, toObject)
+
+    let vk2_xy_pows = Array.from(Array(n), () => new Array(s_max))
+    for(var i = 0; i < n; i++) {
+        for(var j=0; j<s_max; j++){
+            vk2_xy_pows[i][j] = await readG2(fd, curve, toObject)
+            // vk2_xy_pows[i][j] = G2*(x^i * y^j)
+        }
+    }
+    rsContent.sigma_H.vk2_xy_pows = vk2_xy_pows
+    await binFileUtils.endReadSection(fd);
+    // End of reading sigma_H
+
+    // Read theta_G[k] sections for k in [0, 1, ..., s_D]
+    ///////////
+    let vk1_uxy_kij = new Array(s_D)
+    let vk1_vxy_kij = new Array(s_D)
+    let vk1_zxy_kij = new Array(s_D)
+    let vk1_axy_kij = new Array(s_D)
+    for(var k=0; k<s_D; k++){
+        const m_k = rsParam.r1cs[k].m
+        const mPublic_k = rsParam.r1cs[k].mPublic
+        const mPrivate_k = rsParam.r1cs[k].mPrivate
+        let vk1_uxy_ij = Array.from(Array(m_k), () => new Array(s_max))
+        let vk1_vxy_ij = Array.from(Array(m_k), () => new Array(s_max))
+        let vk1_zxy_ij = Array.from(Array(mPublic_k), () => new Array(s_max))
+        let vk1_axy_ij = Array.from(Array(mPrivate_k), () => new Array(s_max))
+        await binFileUtils.startReadUniqueSection(fd, sections, 5+k);
+        for(var i=0; i < m_k; i++){
+            for(var j=0; j < s_max; j++){
+                vk1_uxy_ij[i][j] = await readG1(fd, curve, toObject)
+            }
+        }
+        for(var i=0; i < m_k; i++){
+            for(var j=0; j < s_max; j++){
+                vk1_vxy_ij[i][j] = await readG1(fd, curve, toObject)
+            }
+        }
+        for(var i=0; i < mPublic_k; i++){
+            for(var j=0; j < s_max; j++){
+                vk1_zxy_ij[i][j] = await readG1(fd, curve, toObject)
+            }
+        }
+        for(var i=0; i < mPrivate_k; i++){
+            for(var j=0; j < s_max; j++){
+                vk1_axy_ij[i][j] = await readG1(fd, curve, toObject)
+            }
+        }
+        await binFileUtils.endReadSection(fd);
+        vk1_uxy_kij[k] = vk1_uxy_ij
+        vk1_vxy_kij[k] = vk1_vxy_ij
+        vk1_zxy_kij[k] = vk1_zxy_ij
+        vk1_axy_kij[k] = vk1_axy_ij
+    }
+    rsContent.theta_G.vk1_uxy_kij = vk1_uxy_kij
+    rsContent.theta_G.vk1_vxy_kij = vk1_vxy_kij
+    rsContent.theta_G.vk1_zxy_kij = vk1_zxy_kij
+    rsContent.theta_G.vk1_axy_kij = vk1_axy_kij
+
+    return rsContent
+
+    // async function readFr2(/* toObject */) {
+    //     const n = await binFileUtils.readBigInt(fd, zkey.n8r);
+    //     return Fr.mul(n, Rri2);
+    // }
+}
+
 
 export async function readZKey(fileName, toObject) {
     const {fd, sections} = await binFileUtils.readBinFile(fileName, "zkey", 1);
@@ -407,6 +552,7 @@ export async function readZKey(fileName, toObject) {
 }
 
 
+/* 
 async function readContribution(fd, curve, toObject) {
     const c = {delta:{}};
     c.deltaAfter = await readG1(fd, curve, toObject);
@@ -521,4 +667,4 @@ export function hashPubKey(hasher, curve, c) {
     hashG2(hasher, curve, c.delta.g2_spx);
     hasher.update(c.transcript);
 }
-
+ */

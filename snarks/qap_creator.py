@@ -85,23 +85,36 @@ def r1cs_to_qap(A, B, C):
     return (new_A, new_B, new_C, Z)
 
 def create_solution_polynomials(r, new_A, new_B, new_C):
-    # Calculate A(x)
+
+    # r = [r1(x), r2(x), r3(x), r4(x), r5(x), r6(x)]
+    # A(x) = [a1(x), a2(x), a3(x), a4(x), a5(x), a6(x)]
+    # B(x) = [b1(x), b2(x), b3(x), b4(x), b5(x), b6(x)]
+    # C(x) = [c1(x), c2(x), c3(x), c4(x), c5(x), c6(x)]
+
+    # Apoly = r.A(x)
+    #       = r1(x)*a1(x) + r2(x)*a2(x) + ... + r6(x)*a6(x)
     Apoly = []
     for rval, a in zip(r, new_A):
         Apoly = add_polys(Apoly, multiply_polys([rval], a))
-    # Calcualte B(x)
+
+    # Bpoly = r.B(x)
+    # Bpoly = r1(x)*b1(x) + r2(x)*b2(x) + ... + r6(x)*b6(x)
     Bpoly = []
     for rval, b in zip(r, new_B):
         Bpoly = add_polys(Bpoly, multiply_polys([rval], b))
-    # Calculate C(x)
+
+    # Cpoly = r.C(x)
+    # Cpoly = r1(x)*c1(x) + r2(x)*c2(x) + ... + r6(x)*c6(x)
     Cpoly = []
     for rval, c in zip(r, new_C):
         Cpoly = add_polys(Cpoly, multiply_polys([rval], c))
-    # o = A(x)*B(x)-C(x)
+
+    # o = r.A(x)*r.B(x)-r.C(x)
     o = subtract_polys(multiply_polys(Apoly, Bpoly), Cpoly)
     for i in range(1, len(new_A[0]) + 1):
         assert abs(eval_poly(o, i)) < 10**-10, (eval_poly(o, i), i)
-    # Return A(x), B(x), C(x), A(x)*B(x)-C(x)
+
+    # Return r.A(x), r.B(x), r.C(x), r.A(x)*r.B(x)-r.C(x) = o
     return Apoly, Bpoly, Cpoly, o
 
 def create_divisor_polynomial(sol, Z):

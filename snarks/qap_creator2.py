@@ -91,10 +91,12 @@ def transpose(matrix):
 
 # A, B, C = matrices of m vectors of length n, where for each
 # 0 <= i < m, we want to satisfy A[i] * B[i] - C[i] = 0
-def r1cs_to_qap(A, B, C):
+# This is modified r1cs version with determinant(LCM applied)
+# A[i]*d * B[i]*d - C[i]*d^2 = 0
+def r1cs_to_qap_times_lcm(A, B, C):
     # A, B, C 매트릭스의 각 row를 라그랑주 보간법 수행
-    det_multi = lambda a : a * det4
-    det_s_multi = lambda a : a * (det4**2)
+    det_multi = lambda a : a * det4        # *d
+    det_s_multi = lambda a : a * (det4**2) # *d^2
     A, B, C = transpose(A), transpose(B), transpose(C)
     new_A = [list(map(det_multi, lagrange_interp(a))) for a in A]
     new_B = [list(map(det_multi, lagrange_interp(b))) for b in B]
@@ -159,7 +161,7 @@ C = [[0, 0, 0, 1, 0, 0],
      [0, 0, 0, 0, 0, 1],
      [0, 0, 1, 0, 0, 0]]
 
-Ap, Bp, Cp, Z = r1cs_to_qap(A, B, C)
+Ap, Bp, Cp, Z = r1cs_to_qap_times_lcm(A, B, C)
 print('Ap')
 for x in Ap: print(x)
 print('Bp')

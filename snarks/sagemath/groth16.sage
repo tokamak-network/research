@@ -353,3 +353,12 @@ proof = [proof_A, proof_B, proof_C]
 
 print(proof_A.order())
 
+# LHS = weil(proof[0], proof[1]
+# RHS = weil(sigma1_1[0], sigma2_1[0])
+
+# temp = pointInf1
+# for i in [0, numGates-1]:
+#   temp = temp + R[i]*sigma1_3[i]
+# RHS = RHS * weil(temp, sigma2_1[1])
+
+# print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))

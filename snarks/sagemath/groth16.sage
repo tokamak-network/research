@@ -118,7 +118,7 @@ R.<x> = PowerSeriesRing(Z)
 Rax = R(list(Rx*Ax))
 Rbx = R(list(Rx*Bx))
 Rcx = R(list(Rx*Cx))
-Px = Rax*Rbx-Rcx
+Px = Rax * Rbx - Rcx
 
 # [Hx, rem]=polydiv(Px,Zx,q);
 

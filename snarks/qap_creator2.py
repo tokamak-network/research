@@ -3,6 +3,9 @@
 
 det4 = 12.0
 
+p = 71 #Field size for elliptic curve arithmetic. Choose any prime p such that mod(p,4)==3.
+q = p**2-1 #Field size for program, R1CS, and QAP. 
+
 # Multiply two polynomials
 def multiply_polys(a, b):
     o = [0] * (len(a) + len(b) - 1)
@@ -103,9 +106,11 @@ def r1cs_to_qap_times_lcm(A, B, C):
     new_C = [list(map(det_s_multi, lagrange_interp(c))) for c in C]
     # (x-1)(x-2)(x-3)..(x-k) 다항식 계산(Z)
     Z = [1]
+    print("len(A[0]) = {}".format(len(A[0])))
     for i in range(1, len(A[0]) + 1):
         Z = multiply_polys(Z, [-i, 1])
-    Z = list(map(det_s_multi, Z))
+    # Z = list(map(det_s_multi, Z))
+    print("Z is : {}".format(Z))
     return (new_A, new_B, new_C, Z)
 
 def create_solution_polynomials(r, new_A, new_B, new_C):
@@ -147,6 +152,15 @@ def create_divisor_polynomial(sol, Z):
     #     assert abs(x) < 10**-10
     return quot
 
+def to_matrix_mod(matrix):
+    target = []
+    for row in matrix:
+        temp_row = []
+        for val in row:
+            temp_row.append(int(val) % q)
+        target.append(temp_row)
+    return target
+
 r = [1, 3, 35, 9, 27, 30]
 A = [[0, 1, 0, 0, 0, 0],
      [0, 0, 0, 1, 0, 0],
@@ -186,3 +200,68 @@ print('Z cofactor, H')
 # <==>
 # (A(x)*B(x)-C(x)) / (x-1)(x-2)(x-3)..(x-k) = H
 print(create_divisor_polynomial(sol, Z))
+
+print("Ap % q : ")
+print(to_matrix_mod(Ap))
+print("Bp % q : ")
+print(to_matrix_mod(Bp))
+print("Cp % q : ")
+print(to_matrix_mod(Cp))
+print("Zp % q : ")
+print([z % q for z in Z])
+print("R % q : ")
+print([val % q for val in r])
+
+
+# Ap
+# [-60.0, 110.0, -60.0, 10.0]
+# [96.0, -136.0, 60.0, -8.0]
+# [0.0, 0.0, 0.0, 0.0]
+# [-72.0, 114.0, -48.0, 6.0]
+# [48.0, -84.0, 42.0, -6.0]
+# [-12.0, 22.0, -12.0, 2.0]
+
+# Bp
+# [36.0, -62.0, 30.0, -4.0]
+# [-24.0, 62.0, -30.0, 4.0]
+# [0.0, 0.0, 0.0, 0.0]
+# [0.0, 0.0, 0.0, 0.0]
+# [0.0, 0.0, 0.0, 0.0]
+# [0.0, 0.0, 0.0, 0.0]
+
+# Cp
+# [0.0, 0.0, 0.0, 0.0]
+# [0.0, 0.0, 0.0, 0.0]
+# [-144.0, 264.0, -144.0, 24.0]
+# [576.0, -624.0, 216.0, -24.0]
+# [-864.0, 1368.0, -576.0, 72.0]
+# [576.0, -1008.0, 504.0, -72.0]
+
+# Z
+# [3456.0, -7200.0, 5040.0, -1440.0, 144.0]
+
+# Apoly(A(x))
+# [516.0, -880.0, 462.0, -62.0]
+
+# Bpoly(B(x))
+# [-36.0, 124.0, -60.0, 8.0]
+
+# Cpoly(C(x))
+# [-5904.0, 10320.0, -3528.0, 408.0]
+
+# Sol(A(x)*B(x)-C(x))
+# [-12672.0, 85344.0, -153184.0, 116040.0, -42448.0, 7416.0, -496.0]
+
+# Z cofactor, H
+# [-3.666666666666641, 17.055555555555557, -3.4444444444444446]
+
+# Ap % q :
+# [[4980, 110, 4980, 10], [96, 4904, 60, 5032], [0, 0, 0, 0], [4968, 114, 4992, 6], [48, 4956, 42, 5034], [5028, 22, 5028, 2]]
+# Bp % q :
+# [[36, 4978, 30, 5036], [5016, 62, 5010, 4], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+# Cp % q :
+# [[0, 0, 0, 0], [0, 0, 0, 0], [4896, 264, 4896, 24], [576, 4416, 216, 5016], [4176, 1368, 4464, 72], [576, 4032, 504, 4968]]
+# Zp % q :
+# [24, 4990, 35, 5030, 1]
+# R % q :
+# [1, 3, 35, 9, 27, 30]

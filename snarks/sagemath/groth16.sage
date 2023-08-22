@@ -186,6 +186,9 @@ Hx_val = Hx(x_val)
 numGates = len(Ax.columns())
 numWires = len(Ax.rows())
 
+print("numGates : {}".format(numGates))
+print("numWires : {}".format(numWires))
+
 # print(Ax_val)
 # print(Bx_val)
 # print(Cx_val)
@@ -203,10 +206,13 @@ EC = EllipticCurve(GF(71), [1,0])
 g = EC.points()[12] #(11 : 8 : 1), order is 72, which is max among points
 
 F.<z> = GF(71^2, modulus = x^2 + 1)
-# ECExt = EllipticCurve(F,[1,0])
-ECExt = EC.base_extend(F)
+ECExt = EllipticCurve(F,[1,0])
+# ECExt = EC.base_extend(F)
+# ECExt = EC.change_ring(F)
 maxpoints = [p for p in ECExt.points() if p.order() == 72]
 h = [mp for mp in maxpoints if mp[0] == 60][0] #extended generator
+
+# ECExt2 = EllipticCurve(F,[1,0], gen=h)
 
 pointInf1 = EC.points()[1]
 pointInf2 = ECExt.points()[1]
@@ -340,25 +346,29 @@ for i in range(1,numGates-1):
 for i in range(numGates-1):
     proof_C = proof_C + (Hx[i] * sigma1_5[i])
 
-# print(proof_C)
-
 proof = [proof_A, proof_B, proof_C]
-
-# print(proof)
 
 
 #################
 ### 3. Verify ###
 #################
 
-print(proof_A.order())
+def weil(point1, point2):
+    val = EC.isomorphism_to(ECExt)(point1).weil_pairing(point2, 72)
+    return val
 
-# LHS = weil(proof[0], proof[1]
-# RHS = weil(sigma1_1[0], sigma2_1[0])
+LHS = weil(proof_A, proof_B)
+RHS = weil(sigma1_1[0], sigma2_1[0])
 
-# temp = pointInf1
-# for i in [0, numGates-1]:
-#   temp = temp + R[i]*sigma1_3[i]
-# RHS = RHS * weil(temp, sigma2_1[1])
+temp = pointInf1
 
-# print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))
+for i in [0, numWires-1]:
+  temp = temp + Rx[i]*sigma1_3[i]
+
+RHS = RHS * weil(temp, sigma2_1[1])
+RHS = RHS * weil(proof[2], sigma2_1[2])
+
+print(LHS)
+print(RHS)
+
+print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))

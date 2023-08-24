@@ -327,7 +327,7 @@ for i in range(numGates-1):
 for i in range(numGates):
     sigma2_2.append(h*(x_val^i % q))
 
-print("proofs(tau) : ")
+print("CRS(proving / verification key) : ")
 print("Sigma1_1 : {}".format(sigma1_1))
 print("Sigma1_2 : {}".format(sigma1_2))
 print("Sigma1_3 : {}".format(sigma1_3))

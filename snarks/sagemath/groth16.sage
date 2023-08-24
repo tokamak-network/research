@@ -63,7 +63,7 @@ Cp = [
 
 Zp = [4920, 274, 4815, 85, 5025, 1]
 
-R = [1, 2, 4, 8, 4, 5028]
+r = [1, 2, 4, 8, 4, 5028]
 
 ### DATA2 ###
 
@@ -143,22 +143,18 @@ R = [1, 2, 4, 8, 4, 5028]
 p = 71 #Field size for elliptic curve arithmetic. Choose any prime p such that mod(p,4)==3.
 q = p^2-1 #Field size for program, R1CS, and QAP. 
 
-Ax = matrix(ZZ, Ap)
-Bx = matrix(ZZ, Bp)
-Cx = matrix(ZZ, Cp)
-Zx = vector(ZZ, Zp)
-Rx = vector(ZZ, R)
+Z = IntegerModRing(q) #Z mod q
+R.<x> = PowerSeriesRing(Z) #[a1, a2, a3 ...] = a0x^0 + a1x^2 + a2x^3 ...
 
-print(Ax)
-print(Rx)
-
+Ax = matrix(Z, Ap)
+Bx = matrix(Z, Bp)
+Cx = matrix(Z, Cp)
+Zx = vector(Z, Zp)
+Rx = vector(Z, r)
 
 ##########################################
 ### 0. TESTING THE POLYNOMIAL VALIDITY ###
 ##########################################
-
-Z = IntegerModRing(q)
-R.<x> = PowerSeriesRing(Z)
 
 Rax = R(list(Rx*Ax))
 Rbx = R(list(Rx*Bx))
@@ -229,9 +225,6 @@ Cx_val = []
 # Zx_val
 # Hx_val
 
-print("ax : ")
-print(ax)
-
 for ax in Ax.rows():
     ax_single = R(list(ax))(x_val)
     Ax_val.append(ax_single)
@@ -256,7 +249,7 @@ print("numWires : {}".format(numWires))
 # numGates : 5
 # numWires : 6
 
-print("Ax_val : {}".format(Ax_val))
+# print("Ax_val : {}".format(Ax_val))
 # print(Bx_val)
 # print(Cx_val)
 # print(Zx_val)
@@ -284,8 +277,9 @@ h = [mp for mp in maxpoints if mp[0] == 60][0] #extended generator
 pointInf1 = EC.points()[1]
 pointInf2 = ECExt.points()[1]
 
-
+### sigma1_1 ###
 sigma1_1 = [g*alpha, g*beta, g*delta]
+
 sigma1_2 = []
 sigma1_3 = []
 sigma1_4 = []
@@ -294,14 +288,14 @@ sigma1_5 = []
 sigma2_1 = [beta*h, gamma*h, delta*h]
 sigma2_2 = []
 
-#sigma1_2
+### sigma1_2 ###
 for i in range(numGates):
     val = x_val^i % 5040
     sigma1_2.append(val * g)
 
 # print(sigma1_2)
 
-#sigma1_3
+### sigma1_3 ###
 for i in range(numWires):
     if i in [0, numWires-1]:
         val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) // gamma
@@ -312,7 +306,7 @@ for i in range(numWires):
 # print("sigma1_3 : {}".format(sigma1_3))
 # print(sigma1_3)
 
-#sigma1_4
+#### sigma1_4 ###
 for i in range(numWires):
     if i in [0, numWires-1]:
         sigma1_4.append(0)
@@ -323,7 +317,7 @@ for i in range(numWires):
 
 # print("sigma1_4 : {}".format(sigma1_4))
 
-#sigma1_5
+#### sigma1_5 ###
 for i in range(numGates-1):
     sigma1_5.append(g*(x_val^i * Zx_val // delta))
 
@@ -333,15 +327,14 @@ for i in range(numGates-1):
 for i in range(numGates):
     sigma2_2.append(h*(x_val^i % q))
 
-
-
-# print("Sigma1_1 : {}".format(sigma1_1))
-# print("Sigma1_2 : {}".format(sigma1_2))
-# print("Sigma1_3 : {}".format(sigma1_3))
-# print("Sigma1_4 : {}".format(sigma1_4))
-# print("Sigma1_5 : {}".format(sigma1_5))
-# print("Sigma2_1 : {}".format(sigma2_1))
-# print("Sigma2_2 : {}".format(sigma2_2))
+print("proofs(tau) : ")
+print("Sigma1_1 : {}".format(sigma1_1))
+print("Sigma1_2 : {}".format(sigma1_2))
+print("Sigma1_3 : {}".format(sigma1_3))
+print("Sigma1_4 : {}".format(sigma1_4))
+print("Sigma1_5 : {}".format(sigma1_5))
+print("Sigma2_1 : {}".format(sigma2_1))
+print("Sigma2_2 : {}".format(sigma2_2))
 
 # Sigma1_1 : [(24 : 28 : 1), (10 : 67 : 1), (39 : 12 : 1)]
 # Sigma1_2 : [(11 : 8 : 1), (23 : 64 : 1), (51 : 28 : 1), (11 : 8 : 1), (23 : 64 : 1)]
@@ -351,13 +344,35 @@ for i in range(numGates):
 # Sigma2_1 : [(61 : 67*z : 1), (9 : 55*z : 1), (32 : 12*z : 1)]
 # Sigma2_2 : [(60 : 8*z : 1), (48 : 64*z : 1), (20 : 28*z : 1), (60 : 8*z : 1)]
 
-#TODO : CRS validity check
+### 1.1 CRS validity check ###
 
-# if mod(R*Ax_val*R*Bx_val-R*Cx_val,q)==mod(Zx_val*Hx_val,q)
-#     disp('CRS is valid')
-# else
-#     disp('CRS is invalid')
-# end
+Ax_val_vec = vector(ZZ, Ax_val)
+Bx_val_vec = vector(ZZ, Bx_val)
+Cx_val_vec = vector(ZZ, Cx_val)
+
+Zx_val = Z(Zx_val)
+Hx_val = Z(Hx_val)
+
+# print("Zx_val : {}".format(Zx_val))
+# print("Hx_val : {}".format(Hx_val))
+
+# print("Rx*Ax_val_vec : {}".format(Rx*Ax_val_vec))
+# print("Rx*Bx_val_vec : {}".format(Rx*Bx_val_vec))
+# print("Cx*Cx_val_vec : {}".format(Rx*Cx_val_vec))
+
+lhs = Z((Rx*Ax_val_vec)*(Rx*Bx_val_vec)-(Rx*Cx_val_vec))
+rhs = Zx_val*Hx_val
+
+# print("lhs : {}".format(lhs))
+# print("rhs : {}".format(rhs))
+
+# print("lhs : {}".format(lhs))
+# print("rhs : {}".format(rhs))
+
+if lhs == rhs:
+    print('CRS is valid (Setup successful)')
+else:
+    print('CRS is invalid (Setup fails)')
 
 ################
 ### 2. Prove ###
@@ -417,6 +432,30 @@ for i in range(numGates-1):
 
 proof = [proof_A, proof_B, proof_C]
 
+#TODO : proof validity check
+
+# A=mod(alpha+R*Ax_val+r*delta,q);
+# B=mod(beta+R*Bx_val+s*delta,q);
+# C=mod(MODinv(delta,q)*(R(Ind_pri)*(beta*Ax_val(Ind_pri)+alpha*Bx_val(Ind_pri)+Cx_val(Ind_pri))+Hx_val*Zx_val)...
+#     +A*s+B*r+mod(-r*s*delta,q),q);
+
+# lhs=mod(A*B,q);
+# rhs=0;
+# rhs=mod(rhs+alpha*beta,q);
+# rhs=mod(rhs+gamma*R(Ind_pub)*VAL(Ind_pub).',q);
+# rhs=mod(rhs+C*delta,q);
+
+# proofcheckflag=1;
+# proofcheckflag=proofcheckflag*Peq(Proof_A,EC_pmult(A,g))...
+#     *Peq(Proof_B,EC_pmult(B,h))...
+#     *Peq(Proof_C,EC_pmult(C,g));
+# if lhs==rhs && proofcheckflag==1
+#     disp('Proof is complete')
+# else
+#     disp('Proof is incomplete')
+# end
+# disp(' ')
+
 
 ######################
 ##### 3. Verify ######
@@ -437,8 +476,8 @@ for i in [0, numWires-1]:
 RHS = RHS * weil(temp, sigma2_1[1])
 RHS = RHS * weil(proof[2], sigma2_1[2])
 
-print(LHS)
-print(RHS)
+# print(LHS)
+# print(RHS)
 
 print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))
 

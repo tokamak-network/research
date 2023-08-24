@@ -96,7 +96,7 @@ r = [1, 2, 4, 8, 4, 5028]
 
 # Zp = [24, 4990, 35, 5030, 1]
 
-# R = [1, 3, 35, 9, 27, 30]
+# r = [1, 3, 35, 9, 27, 30]
 
 # print(Ap)
 # print(Bp)
@@ -198,11 +198,11 @@ print("The remainder should be 0 : {}".format(remainder == 0))
 ### 1.2 CRS CONSTRUCTION ###
 ############################
 
-alpha = 3926
-beta = 3604
-gamma = 2971
-delta = 1357
-x_val = 3721
+alpha = Z(3926)
+beta = Z(3604)
+gamma = Z(2971)
+delta = Z(1357)
+x_val = Z(3721)
 
 # alpha = random.randint(1,q-2)
 # beta = random.randint(1,q-2)
@@ -295,7 +295,7 @@ sigma2_2 = []
 
 ### sigma1_2 ###
 for i in range(numGates):
-    val = x_val^i % 5040
+    val = x_val^i
     sigma1_2.append(val * g)
 
 # print(sigma1_2)
@@ -330,7 +330,8 @@ for i in range(numGates-1):
 
 #sigma2-2
 for i in range(numGates):
-    sigma2_2.append(h*(x_val^i % q))
+    # sigma2_2.append(h*(Z(x_val^i)))
+    sigma2_2.append(h*(x_val^i))
 
 print("CRS(proving / verification key) : ")
 print("Sigma1_1 : {}".format(sigma1_1))
@@ -353,9 +354,16 @@ print("Sigma2_2 : {}".format(sigma2_2))
 ### 1.3 CRS VALIDITY CHECK ###
 ##############################
 
-Ax_val_vec = vector(ZZ, Ax_val)
-Bx_val_vec = vector(ZZ, Bx_val)
-Cx_val_vec = vector(ZZ, Cx_val)
+# Ax_val_vec = vector(ZZ, Ax_val)
+# Bx_val_vec = vector(ZZ, Bx_val)
+# Cx_val_vec = vector(ZZ, Cx_val)
+
+# Zx_val = Z(Zx_val)
+# Hx_val = Z(Hx_val)
+
+Ax_val = vector(Z, Ax_val)
+Bx_val = vector(Z, Bx_val)
+Cx_val = vector(Z, Cx_val)
 
 Zx_val = Z(Zx_val)
 Hx_val = Z(Hx_val)
@@ -367,7 +375,10 @@ Hx_val = Z(Hx_val)
 # print("Rx*Bx_val_vec : {}".format(Rx*Bx_val_vec))
 # print("Cx*Cx_val_vec : {}".format(Rx*Cx_val_vec))
 
-lhs = Z((Rx*Ax_val_vec)*(Rx*Bx_val_vec)-(Rx*Cx_val_vec))
+# lhs = Z((Rx*Ax_val_vec)*(Rx*Bx_val_vec)-(Rx*Cx_val_vec))
+# rhs = Zx_val*Hx_val
+
+lhs = Z((Rx*Ax_val)*(Rx*Bx_val)-(Rx*Cx_val))
 rhs = Zx_val*Hx_val
 
 # print("lhs : {}".format(lhs))
@@ -447,9 +458,12 @@ print()
 
 #TODO : proof validity check
 
-###############################
-### 2. PROOF VALIDITY CHECK ###
-###############################
+####################################
+### 2.1 PROOF COMPLETENESS CHECK ###
+####################################
+
+# A = alpha + Rx*Ax_val + r*delta
+# print(A)
 
 # A=mod(alpha+R*Ax_val+r*delta,q);
 # B=mod(beta+R*Bx_val+s*delta,q);
@@ -493,11 +507,10 @@ for i in [0, numWires-1]:
 RHS = RHS * weil(temp, sigma2_1[1])
 RHS = RHS * weil(proof[2], sigma2_1[2])
 
-# print(LHS)
-# print(RHS)
+print(LHS)
+print(RHS)
 
 print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))
-
 
 # example output)
 # The remainder should be 0 : True

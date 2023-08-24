@@ -1,3 +1,5 @@
+import random
+
 #  Ap:
 #           480        3944         660        4888          12
 #            24        5016        5030          12        5038
@@ -32,69 +34,69 @@
 
 ### DATA 1 ###
 
-# Ap = [
-#     [480, 3944, 660, 4888, 12],
-#     [24, 5016, 5030, 12, 5038],
-#     [4944, 200, 4900, 40, 5036],
-#     [24, 4990, 35, 5030, 1],
-#     [24, 4990, 35, 5030, 1],
-#     [0, 0, 0, 0, 0]
-#     ]
-
-# Bp = [
-#     [24, 4990, 35, 5030, 1],
-#     [0, 90, 4947, 30, 5037],
-#     [0, 5000, 58, 5020, 2],
-#     [0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0]
-#     ]
-
-# Cp = [
-#     [0, 0, 0, 0, 0],
-#     [3600, 4704, 3264, 1344, 4944],
-#     [2880, 4272, 2496, 48, 384],
-#     [720, 3888, 2016, 3312, 144],
-#     [2160, 816, 1104, 1056, 4944],
-#     [576, 3840, 840, 4800, 24]
-#     ]
-
-# Zp = [4920, 274, 4815, 85, 5025, 1]
-
-# R = [1, 2, 4, 8, 4, 5028]
-
-### DATA2 ###
-
 Ap = [
-    [4980, 110, 4980, 10],
-    [96, 4904, 60, 5032],
-    [0, 0, 0, 0],
-    [4968, 114, 4992, 6],
-    [48, 4956, 42, 5034],
-    [5028, 22, 5028, 2]
+    [480, 3944, 660, 4888, 12],
+    [24, 5016, 5030, 12, 5038],
+    [4944, 200, 4900, 40, 5036],
+    [24, 4990, 35, 5030, 1],
+    [24, 4990, 35, 5030, 1],
+    [0, 0, 0, 0, 0]
     ]
 
 Bp = [
-    [36, 4978, 30, 5036],
-    [5016, 62, 5010, 4],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0], 
-    [0, 0, 0, 0]
+    [24, 4990, 35, 5030, 1],
+    [0, 90, 4947, 30, 5037],
+    [0, 5000, 58, 5020, 2],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0]
     ]
 
 Cp = [
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [4896, 264, 4896, 24],
-    [576, 4416, 216, 5016],
-    [4176, 1368, 4464, 72],
-    [576, 4032, 504, 4968]
+    [0, 0, 0, 0, 0],
+    [3600, 4704, 3264, 1344, 4944],
+    [2880, 4272, 2496, 48, 384],
+    [720, 3888, 2016, 3312, 144],
+    [2160, 816, 1104, 1056, 4944],
+    [576, 3840, 840, 4800, 24]
     ]
 
-Zp = [24, 4990, 35, 5030, 1]
+Zp = [4920, 274, 4815, 85, 5025, 1]
 
-R = [1, 3, 35, 9, 27, 30]
+R = [1, 2, 4, 8, 4, 5028]
+
+### DATA2 ###
+
+# Ap = [
+#     [4980, 110, 4980, 10],
+#     [96, 4904, 60, 5032],
+#     [0, 0, 0, 0],
+#     [4968, 114, 4992, 6],
+#     [48, 4956, 42, 5034],
+#     [5028, 22, 5028, 2]
+#     ]
+
+# Bp = [
+#     [36, 4978, 30, 5036],
+#     [5016, 62, 5010, 4],
+#     [0, 0, 0, 0],
+#     [0, 0, 0, 0],
+#     [0, 0, 0, 0], 
+#     [0, 0, 0, 0]
+#     ]
+
+# Cp = [
+#     [0, 0, 0, 0],
+#     [0, 0, 0, 0],
+#     [4896, 264, 4896, 24],
+#     [576, 4416, 216, 5016],
+#     [4176, 1368, 4464, 72],
+#     [576, 4032, 504, 4968]
+#     ]
+
+# Zp = [24, 4990, 35, 5030, 1]
+
+# R = [1, 3, 35, 9, 27, 30]
 
 # print(Ap)
 # print(Bp)
@@ -147,6 +149,14 @@ Cx = matrix(ZZ, Cp)
 Zx = vector(ZZ, Zp)
 Rx = vector(ZZ, R)
 
+print(Ax)
+print(Rx)
+
+
+##########################################
+### 0. TESTING THE POLYNOMIAL VALIDITY ###
+##########################################
+
 Z = IntegerModRing(q)
 R.<x> = PowerSeriesRing(Z)
 
@@ -154,6 +164,9 @@ Rax = R(list(Rx*Ax))
 Rbx = R(list(Rx*Bx))
 Rcx = R(list(Rx*Cx))
 Px = Rax * Rbx - Rcx
+
+# print("Rx*Ax : {}".format(Rx*Ax))
+# print("Rax : {}".format(Rax))
 
 # [Hx, rem]=polydiv(Px,Zx,q);
 
@@ -166,6 +179,8 @@ zx = R(Zp).polynomial()
 Hx = px // zx # 12*x^3 + 4836*x^2 + 384*x + 720
 # print(Hx.list())
 remainder = px % zx # 0
+
+print("The remainder should be 0 : {}".format(remainder == 0))
 
 
 # P(x)=linear_combination(r,Ax)*linear_combination(r,Bx)-linear_combination(r,Cx)
@@ -188,7 +203,19 @@ gamma = 2971
 delta = 1357
 x_val = 3721
 
+# alpha = random.randint(1,q-2)
+# beta = random.randint(1,q-2)
+# gamma = random.randint(1,q-2)
+# delta = random.randint(1,q-2)
+# x_val = random.randint(1,q-2)
+
 tau = [alpha, beta, gamma, delta, x_val]
+
+# tau : [3351, 1339, 4343, 2771, 380]
+# tau : [3806, 1193, 1247, 1027, 1707]
+# tau : [1203, 320, 4771, 4621, 183]
+
+print("tau : {}".format(tau))
 
 # Ax_val=mod(subs(Ax,x,x_val),q);
 # Bx_val=mod(subs(Bx,x,x_val),q);
@@ -202,6 +229,8 @@ Cx_val = []
 # Zx_val
 # Hx_val
 
+print("ax : ")
+print(ax)
 
 for ax in Ax.rows():
     ax_single = R(list(ax))(x_val)
@@ -227,7 +256,7 @@ print("numWires : {}".format(numWires))
 # numGates : 5
 # numWires : 6
 
-# print(Ax_val)
+print("Ax_val : {}".format(Ax_val))
 # print(Bx_val)
 # print(Cx_val)
 # print(Zx_val)
@@ -270,34 +299,31 @@ for i in range(numGates):
     val = x_val^i % 5040
     sigma1_2.append(val * g)
 
+# print(sigma1_2)
+
 #sigma1_3
+for i in range(numWires):
+    if i in [0, numWires-1]:
+        val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) // gamma
+        sigma1_3.append(val * g)
+    else:
+        sigma1_3.append(0)
 
-val0 = (beta*Ax_val[0] + alpha*Bx_val[0] + Cx_val[0]) // gamma
-val5 = (beta*Ax_val[5] + alpha*Bx_val[5] + Cx_val[5]) // gamma
-
-# print(val0)
-# print(val5)
-
-sigma1_3 = [val0 * g, 0, 0, 0, 0, val5 * g]
+# print("sigma1_3 : {}".format(sigma1_3))
 # print(sigma1_3)
 
 #sigma1_4
-val1 = (beta*Ax_val[1] + alpha*Bx_val[1] + Cx_val[1]) // delta
-val2 = (beta*Ax_val[2] + alpha*Bx_val[2] + Cx_val[2]) // delta
-val3 = (beta*Ax_val[3] + alpha*Bx_val[3] + Cx_val[3]) // delta
-val4 = (beta*Ax_val[4] + alpha*Bx_val[4] + Cx_val[4]) // delta
+for i in range(numWires):
+    if i in [0, numWires-1]:
+        sigma1_4.append(0)
+    else:
+        val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) // delta
+        sigma1_4.append(val * g)
 
-# print(val1)
-# print(val2)
-# print(val3)
-# print(val4)
 
-sigma1_4 = [0, val1 * g, val2 * g, val3 * g, val4 * g, 0]
-# print(sigma1_4)
+# print("sigma1_4 : {}".format(sigma1_4))
 
 #sigma1_5
-
-
 for i in range(numGates-1):
     sigma1_5.append(g*(x_val^i * Zx_val // delta))
 
@@ -340,6 +366,11 @@ for i in range(numGates):
 #random number created by proover
 r = 4106
 s = 4565
+
+# r = random.randint(0, q-1)
+# s = random.randint(0, q-1)
+
+print("r, s : {}, {}".format(r, s))
 
 #Build Proof_A
 proof_A = sigma1_1[0]
@@ -387,9 +418,9 @@ for i in range(numGates-1):
 proof = [proof_A, proof_B, proof_C]
 
 
-#################
-### 3. Verify ###
-#################
+######################
+##### 3. Verify ######
+######################
 
 def weil(point1, point2):
     val = EC.isomorphism_to(ECExt)(point1).weil_pairing(point2, 72)
@@ -410,3 +441,20 @@ print(LHS)
 print(RHS)
 
 print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))
+
+
+# example)
+# [4980  110 4980   10]
+# [  96 4904   60 5032]
+# [   0    0    0    0]
+# [4968  114 4992    6]
+# [  48 4956   42 5034]
+# [5028   22 5028    2]
+# (1, 3, 35, 9, 27, 30)
+# tau : [2134, 2516, 5021, 2563, 3638]
+# numGates : 4
+# numWires : 6
+# r, s : 1543, 1489
+# 36*z + 14
+# 36*z + 14
+# Verification result (RHS == LHS)? : True

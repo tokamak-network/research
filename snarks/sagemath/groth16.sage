@@ -137,7 +137,7 @@ r = [1, 2, 4, 8, 4, 5028]
 ### Sagemath ## 
 
 ################
-### 1. Setup ###
+### 1. SETUP ###
 ################
 
 p = 71 #Field size for elliptic curve arithmetic. Choose any prime p such that mod(p,4)==3.
@@ -152,9 +152,9 @@ Cx = matrix(Z, Cp)
 Zx = vector(Z, Zp)
 Rx = vector(Z, r)
 
-##########################################
-### 0. TESTING THE POLYNOMIAL VALIDITY ###
-##########################################
+#####################################
+### 1.1 POLYNOMIAL VALIDITY CHECK ###
+#####################################
 
 Rax = R(list(Rx*Ax))
 Rbx = R(list(Rx*Bx))
@@ -192,6 +192,11 @@ print("The remainder should be 0 : {}".format(remainder == 0))
 
 # % Px=pmod(Px,q)
 # % 12*x^8 + 4656*x^7 + 4464*x^6 + 120*x^5 + 468*x^4 + 3144*x^3 + 2976*x^2 + 4320
+
+
+############################
+### 1.2 CRS CONSTRUCTION ###
+############################
 
 alpha = 3926
 beta = 3604
@@ -344,7 +349,9 @@ print("Sigma2_2 : {}".format(sigma2_2))
 # Sigma2_1 : [(61 : 67*z : 1), (9 : 55*z : 1), (32 : 12*z : 1)]
 # Sigma2_2 : [(60 : 8*z : 1), (48 : 64*z : 1), (20 : 28*z : 1), (60 : 8*z : 1)]
 
-### 1.1 CRS validity check ###
+##############################
+### 1.3 CRS VALIDITY CHECK ###
+##############################
 
 Ax_val_vec = vector(ZZ, Ax_val)
 Bx_val_vec = vector(ZZ, Bx_val)
@@ -371,12 +378,14 @@ rhs = Zx_val*Hx_val
 
 if lhs == rhs:
     print('CRS is valid (Setup successful)')
+    print()
 else:
     print('CRS is invalid (Setup fails)')
+    print()
 
-################
-### 2. Prove ###
-################
+##################
+### 2. PROVING ###
+##################
 
 #random number created by proover
 r = 4106
@@ -432,7 +441,15 @@ for i in range(numGates-1):
 
 proof = [proof_A, proof_B, proof_C]
 
+print("Proofs [proof_A, proof_B, proof_C] : ")
+print(proof)
+print()
+
 #TODO : proof validity check
+
+###############################
+### 2. PROOF VALIDITY CHECK ###
+###############################
 
 # A=mod(alpha+R*Ax_val+r*delta,q);
 # B=mod(beta+R*Bx_val+s*delta,q);
@@ -458,7 +475,7 @@ proof = [proof_A, proof_B, proof_C]
 
 
 ######################
-##### 3. Verify ######
+##### 3. VERIFY ######
 ######################
 
 def weil(point1, point2):
@@ -482,18 +499,23 @@ RHS = RHS * weil(proof[2], sigma2_1[2])
 print("Verification result (RHS == LHS)? : {}".format(RHS == LHS))
 
 
-# example)
-# [4980  110 4980   10]
-# [  96 4904   60 5032]
-# [   0    0    0    0]
-# [4968  114 4992    6]
-# [  48 4956   42 5034]
-# [5028   22 5028    2]
-# (1, 3, 35, 9, 27, 30)
-# tau : [2134, 2516, 5021, 2563, 3638]
-# numGates : 4
+# example output)
+# The remainder should be 0 : True
+# tau : [3926, 3604, 2971, 1357, 3721]
+# numGates : 5
 # numWires : 6
-# r, s : 1543, 1489
-# 36*z + 14
-# 36*z + 14
+# CRS(proving / verification key) :
+# Sigma1_1 : [(24 : 28 : 1), (10 : 67 : 1), (39 : 12 : 1)]
+# Sigma1_2 : [(11 : 8 : 1), (23 : 64 : 1), (51 : 28 : 1), (11 : 8 : 1), (23 : 64 : 1)]
+# Sigma1_3 : [(0 : 1 : 0), 0, 0, 0, 0, (0 : 1 : 0)]
+# Sigma1_4 : [0, (0 : 1 : 0), (0 : 1 : 0), (0 : 1 : 0), (0 : 1 : 0), 0]
+# Sigma1_5 : [(0 : 1 : 0), (0 : 1 : 0), (0 : 1 : 0), (0 : 1 : 0)]
+# Sigma2_1 : [(61 : 67*z : 1), (9 : 55*z : 1), (32 : 12*z : 1)]
+# Sigma2_2 : [(60 : 8*z : 1), (48 : 64*z : 1), (20 : 28*z : 1), (60 : 8*z : 1), (48 : 64*z : 1)]
+# CRS is valid (Setup successful)
+
+# r, s : 4106, 4565
+# Proofs [proof_A, proof_B, proof_C] :
+# [(30 : 60 : 1), (49 : 34*z : 1), (54 : 18 : 1)]
+
 # Verification result (RHS == LHS)? : True

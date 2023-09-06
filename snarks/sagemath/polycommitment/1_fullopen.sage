@@ -82,6 +82,3 @@ print("Cf == vCf ? {}".format(Cf == vCf))
 print("Cf : {}".format(Cf))
 print("vCf : {}".format(vCf))
 
-
-# print(Fa)
-

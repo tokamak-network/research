@@ -68,7 +68,7 @@ Cf = sum([RS[i]*list(F)[i] for i in range(d+1)])
 ## 2.2.Verify ##
 ################
 
-# e(Cq, a*G-b*G) == e(Cf - c*G, G) : ?
+# Checking, e(Cq, a*G-b*G) == e(Cf - c*G, G) : ?
 # why?
 # Q(x) = (F(x) - c) / (x - b)
 # (a - b) * Q(a) = (F(a) - c), evaluated at a

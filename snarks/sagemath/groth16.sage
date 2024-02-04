@@ -34,69 +34,69 @@ import random
 
 ### DATA 1 ###
 
-# Ap = [
-#     [480, 3944, 660, 4888, 12],
-#     [24, 5016, 5030, 12, 5038],
-#     [4944, 200, 4900, 40, 5036],
-#     [24, 4990, 35, 5030, 1],
-#     [24, 4990, 35, 5030, 1],
-#     [0, 0, 0, 0, 0]
-#     ]
-
-# Bp = [
-#     [24, 4990, 35, 5030, 1],
-#     [0, 90, 4947, 30, 5037],
-#     [0, 5000, 58, 5020, 2],
-#     [0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0]
-#     ]
-
-# Cp = [
-#     [0, 0, 0, 0, 0],
-#     [3600, 4704, 3264, 1344, 4944],
-#     [2880, 4272, 2496, 48, 384],
-#     [720, 3888, 2016, 3312, 144],
-#     [2160, 816, 1104, 1056, 4944],
-#     [576, 3840, 840, 4800, 24]
-#     ]
-
-# Zp = [4920, 274, 4815, 85, 5025, 1]
-
-# r = [1, 2, 4, 8, 4, 5028]
-
-### DATA2 ###
-
 Ap = [
-    [4980, 110, 4980, 10],
-    [96, 4904, 60, 5032],
-    [0, 0, 0, 0],
-    [4968, 114, 4992, 6],
-    [48, 4956, 42, 5034],
-    [5028, 22, 5028, 2]
+    [480, 3944, 660, 4888, 12],
+    [24, 5016, 5030, 12, 5038],
+    [4944, 200, 4900, 40, 5036],
+    [24, 4990, 35, 5030, 1],
+    [24, 4990, 35, 5030, 1],
+    [0, 0, 0, 0, 0]
     ]
 
 Bp = [
-    [36, 4978, 30, 5036],
-    [5016, 62, 5010, 4],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0], 
-    [0, 0, 0, 0]
+    [24, 4990, 35, 5030, 1],
+    [0, 90, 4947, 30, 5037],
+    [0, 5000, 58, 5020, 2],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0]
     ]
 
 Cp = [
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [4896, 264, 4896, 24],
-    [576, 4416, 216, 5016],
-    [4176, 1368, 4464, 72],
-    [576, 4032, 504, 4968]
+    [0, 0, 0, 0, 0],
+    [3600, 4704, 3264, 1344, 4944],
+    [2880, 4272, 2496, 48, 384],
+    [720, 3888, 2016, 3312, 144],
+    [2160, 816, 1104, 1056, 4944],
+    [576, 3840, 840, 4800, 24]
     ]
 
-Zp = [24, 4990, 35, 5030, 1]
+Zp = [4920, 274, 4815, 85, 5025, 1]
 
-r = [1, 3, 35, 9, 27, 30]
+r = [1, 2, 4, 8, 4, 5028]
+
+### DATA2 ###
+
+# Ap = [
+#     [4980, 110, 4980, 10],
+#     [96, 4904, 60, 5032],
+#     [0, 0, 0, 0],
+#     [4968, 114, 4992, 6],
+#     [48, 4956, 42, 5034],
+#     [5028, 22, 5028, 2]
+#     ]
+
+# Bp = [
+#     [36, 4978, 30, 5036],
+#     [5016, 62, 5010, 4],
+#     [0, 0, 0, 0],
+#     [0, 0, 0, 0],
+#     [0, 0, 0, 0], 
+#     [0, 0, 0, 0]
+#     ]
+
+# Cp = [
+#     [0, 0, 0, 0],
+#     [0, 0, 0, 0],
+#     [4896, 264, 4896, 24],
+#     [576, 4416, 216, 5016],
+#     [4176, 1368, 4464, 72],
+#     [576, 4032, 504, 4968]
+#     ]
+
+# Zp = [24, 4990, 35, 5030, 1]
+
+# r = [1, 3, 35, 9, 27, 30]
 
 # print(Ap)
 # print(Bp)
@@ -301,9 +301,11 @@ for i in range(numGates):
 # print(sigma1_2)
 
 ### sigma1_3 ###
+VAL = [0]*numWires
 for i in range(numWires):
     if i in [0, numWires-1]:
         val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) // gamma
+        VAL[i] = val
         sigma1_3.append(val * g)
     else:
         sigma1_3.append(0)
@@ -456,36 +458,29 @@ print("Proofs [proof_A, proof_B, proof_C] : ")
 print(proof)
 print()
 
-#TODO : proof validity check
+#TODO : proof completeness check
 
 ####################################
 ### 2.1 PROOF COMPLETENESS CHECK ###
 ####################################
 
-# A = alpha + Rx*Ax_val + r*delta
-# print(A)
+A = alpha+Rx*Ax_val+r*delta
+B = beta + Rx*Bx_val+s*delta
+C = 1/delta*Rx[1:numWires-1]*(beta*Ax_val[1:numWires-1] + alpha*Bx_val[1:numWires-1] + Cx_val[1:numWires-1])+Hx_val*Zx_val + A*s + B*r + (-r*s*delta)
 
-# A=mod(alpha+R*Ax_val+r*delta,q);
-# B=mod(beta+R*Bx_val+s*delta,q);
-# C=mod(MODinv(delta,q)*(R(Ind_pri)*(beta*Ax_val(Ind_pri)+alpha*Bx_val(Ind_pri)+Cx_val(Ind_pri))+Hx_val*Zx_val)...
-#     +A*s+B*r+mod(-r*s*delta,q),q);
+lhs = A*B
 
-# lhs=mod(A*B,q);
-# rhs=0;
-# rhs=mod(rhs+alpha*beta,q);
-# rhs=mod(rhs+gamma*R(Ind_pub)*VAL(Ind_pub).',q);
-# rhs=mod(rhs+C*delta,q);
+rhs = alpha*beta #2024
 
-# proofcheckflag=1;
-# proofcheckflag=proofcheckflag*Peq(Proof_A,EC_pmult(A,g))...
-#     *Peq(Proof_B,EC_pmult(B,h))...
-#     *Peq(Proof_C,EC_pmult(C,g));
-# if lhs==rhs && proofcheckflag==1
-#     disp('Proof is complete')
-# else
-#     disp('Proof is incomplete')
-# end
-# disp(' ')
+rpub = [Rx[0], Rx[-1]]
+valpub = [VAL[0], VAL[-1]]
+
+rhs = rhs + gamma*vector(rpub)*vector(valpub)  #4040
+rhs = rhs + C*delta #984
+
+result = (proof_A == g*A) and (proof_B == B*h) and (proof_C == C*g)
+
+print("proof completeness check : {}".format(result and lhs==rhs))
 
 
 ######################

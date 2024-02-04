@@ -464,9 +464,9 @@ print()
 ### 2.1 PROOF COMPLETENESS CHECK ###
 ####################################
 
-A = alpha+Rx*Ax_val+r*delta
-B = beta + Rx*Bx_val+s*delta
-C = 1/delta*Rx[1:numWires-1]*(beta*Ax_val[1:numWires-1] + alpha*Bx_val[1:numWires-1] + Cx_val[1:numWires-1])+Hx_val*Zx_val + A*s + B*r + (-r*s*delta)
+A = alpha + Rx*Ax_val + r*delta
+B = beta + Rx*Bx_val + s*delta
+C = 1/delta*Rx[1:numWires-1]*(beta*Ax_val[1:numWires-1] + alpha*Bx_val[1:numWires-1] + Cx_val[1:numWires-1]) + Hx_val*Zx_val + A*s + B*r + (-r*s*delta)
 
 lhs = A*B
 

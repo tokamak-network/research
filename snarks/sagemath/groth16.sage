@@ -142,6 +142,8 @@ r = [1, 2, 4, 8, 4, 5028]
 
 p = 71 #Field size for elliptic curve arithmetic. Choose any prime p such that mod(p,4)==3.
 q = p^2-1 #Field size for program, R1CS, and QAP. 
+# q = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+# q = 21888242871839275222246405745257275088696311157297823662689037894645226208583
 
 Z = IntegerModRing(q) #Z mod q
 R.<x> = PowerSeriesRing(Z) #[a1, a2, a3 ...] = a0x^0 + a1x^2 + a2x^3 ...
@@ -401,8 +403,8 @@ else:
 ##################
 
 #random number created by proover
-r = 4106
-s = 4565
+r = Z(4106)
+s = Z(4565)
 
 # r = random.randint(0, q-1)
 # s = random.randint(0, q-1)
@@ -446,7 +448,7 @@ temp_proof_B = temp_proof_B + (s * sigma1_1[2])
 #Build proof_C
 proof_C = (s * proof_A) + (r * temp_proof_B) - (r*s*sigma1_1[2])
 
-for i in range(1,numGates-1):
+for i in range(1,numWires-1):
     proof_C = proof_C + (Rx[i] * sigma1_4[i])
 
 for i in range(numGates-1):
@@ -466,7 +468,21 @@ print()
 
 A = alpha + Rx*Ax_val + r*delta
 B = beta + Rx*Bx_val + s*delta
-C = 1/delta*Rx[1:numWires-1]*(beta*Ax_val[1:numWires-1] + alpha*Bx_val[1:numWires-1] + Cx_val[1:numWires-1]) + Hx_val*Zx_val + A*s + B*r + (-r*s*delta)
+# C = 1/delta * (Rx[1:numWires-1]*(beta*Ax_val[1:numWires-1] + alpha*Bx_val[1:numWires-1] + Cx_val[1:numWires-1]) + Hx_val*Zx_val) + A*s + B*r + (-r*s*delta)
+
+C = 1/delta * \
+    (Rx[1:numWires-1] * \
+        (beta*Ax_val[1:numWires-1] + alpha*Bx_val[1:numWires-1] + Cx_val[1:numWires-1]) \
+        + Hx_val*Zx_val \
+    ) \
+     + A*s \
+     + B*r \
+     + (-r*s*delta)
+
+print("A, B, C")
+print(A)
+print(B)
+print(C)
 
 lhs = A*B
 

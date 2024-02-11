@@ -111,11 +111,19 @@ print("Px % Zx  = 0 ?  {}".format(Remainder == 0))
 ### 1. CRS CONSTRUCTION ###
 ############################
 
-alpha = GF(3926)
-beta = GF(3604)
-gamma = GF(2971)
-delta = GF(1357)
-x_val = GF(3721)
+#TEST values
+# alpha = GF(3926)
+# beta = GF(3604)
+# gamma = GF(2971)
+# delta = GF(1357)
+# x_val = GF(3721)
+
+# Toxic Wastes
+alpha = GF(random.randint(0, curve_order-1))
+beta = GF(random.randint(0, curve_order-1))
+gamma = GF(random.randint(0, curve_order-1))
+delta = GF(random.randint(0, curve_order-1))
+x_val = GF(random.randint(0, curve_order-1))
 
 tau = [alpha, beta, gamma, delta, x_val]
 
@@ -222,8 +230,14 @@ print("Is lhs == rhs ? : {}".format(lhs == rhs))
 
 ### 2. PROVING ###
 
-r = GF(4106)
-s = GF(4565)
+# prover's random number
+
+#test values
+# r = GF(4106)
+# s = GF(4565)
+
+r = GF(random.randint(0, curve_order-1))
+s = GF(random.randint(0, curve_order-1))
 
 #Build Proof_A, G1 based
 proof_A = sigma1_1[0]

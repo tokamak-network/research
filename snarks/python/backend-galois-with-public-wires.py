@@ -50,6 +50,22 @@ Cp = [
 Z = [3456.0, -7200.0, 5040.0, -1440.0, 144.0]
 R = [1, 3, 35, 9, 27, 30]
 
+numGates = len(Ap[0]) #length of Ax, n, 4
+numWires = len(Ap)    #height of Ax, m, 6
+
+# Ind_pri, Ind_pub setting
+# numWires are consist of (Ind_pri + Ind_pub)
+# Ind_pub is public inputs / outputs
+# Ind_pri is private inputs / outputs
+ind_indexes = [i for i in range(numWires)]
+ind_pub_indexs = [0, numWires-1] #public values, it is set when R1CS, QAP is created
+# ind_pub_indexs = [0, 1, numWires-1] #also works
+# ind_pub_indexs = [0, numWires-2, numWires-1] #also works
+ind_pri_indexs = [i for i in range(numWires) if i not in ind_pub_indexs] #extract only private values
+
+print("public values index : ", ind_pub_indexs)
+print("private values index : ", ind_pri_indexs)
+
 Ax = [ [int(num) % curve_order for num in vec] for vec in Ap ]
 Bx = [ [int(num) % curve_order for num in vec] for vec in Bp ]
 Cx = [ [int(num) % curve_order for num in vec] for vec in Cp ]
@@ -122,9 +138,6 @@ for i in range(len(Cx)):
 Zx_val = Zx(x_val)
 Hx_val = Hx(x_val)
 
-numGates = len(Ax[0]) #length of Ax, n
-numWires = len(Ax)    #height of Ax, m
-
 #sigma1_1 = [G1 * alpha, G1 * beta, G1 * delta]
 sigma1_1 = [multiply(G1, int(alpha)), multiply(G1, int(beta)), multiply(G1, int(delta))]
 sigma1_2 = []
@@ -150,9 +163,22 @@ for i in range(numGates):
 # ]
 # ## length(sigma1_3) == l
 # ## l is num of public inputs ## 
+
+# #non-Ind_pub
+# VAL = [GF(0)]*numWires
+# for i in range(numWires):
+#     if i in [0, numWires-1]:
+#         val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) / gamma
+#         VAL[i] = val
+#         sigma1_3.append(multiply(G1, int(val)))
+#     else:
+#         sigma1_3.append((0, 0))
+
+#Ind_pub applied
 VAL = [GF(0)]*numWires
 for i in range(numWires):
-    if i in [0, numWires-1]:
+    # if i in [0, numWires-1]:
+    if i in ind_pub_indexs:
         val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) / gamma
         VAL[i] = val
         sigma1_3.append(multiply(G1, int(val)))
@@ -166,8 +192,10 @@ for i in range(numWires):
 #     G1 * {beta*a_{m}(x)   + alpha*b_{m}(x)   + c_{m}(x)  }/delta
 # ]
 # ## length(sigma1_4) == (m - l)
+# Ind_pri applied
 for i in range(numWires):
-    if i in [0, numWires-1]:
+    # if i in [0, numWires-1]:
+    if i in ind_pub_indexs:
         sigma1_4.append((0, 0))
     else:
         val = (beta*Ax_val[i] + alpha*Bx_val[i] + Cx_val[i]) / delta
@@ -226,8 +254,8 @@ temp_proof_B = add(temp_proof_B, multiply(sigma1_1[2], int(s)))
 
 #Build proof_C, G1 based
 proof_C = add(add(multiply(proof_A, int(s)), multiply(temp_proof_B, int(r))), neg(multiply(sigma1_1[2], int(s*r))))
-
-for i in range(1, numWires-1):
+# Ind_pri applied
+for i in ind_pri_indexs:
     proof_C = add(proof_C, multiply(sigma1_4[i], int(npRx[i])))
 
 for i in range(numGates-1):
@@ -243,23 +271,37 @@ print("")
 A = alpha + Rax(x_val) + r*delta
 B = beta + Rbx(x_val) + s*delta
 
-C0 = GF(1) / delta
-C1 = npRx[1:numWires-1]
+#Ind_pri applied
+Ax_val_pub = [Ax_val[i] for i in ind_pri_indexs]
+Bx_val_pub = [Bx_val[i] for i in ind_pri_indexs]
+Cx_val_pub = [Cx_val[i] for i in ind_pri_indexs]
 
-C1_1 = GF([ax_val * beta for ax_val in Ax_val[1:numWires-1]])
-C1_2 = GF([bx_val * alpha for bx_val in Bx_val[1:numWires-1]])
-C1_3 = GF(Cx_val[1:numWires-1])
+C0 = GF(1) / delta
+# C1 = npRx[1:numWires-1]
+C1 = GF([npRx[i] for i in ind_pri_indexs])
+
+# C1_1 = GF([ax_val * beta for ax_val in Ax_val[1:numWires-1]])
+# C1_2 = GF([bx_val * alpha for bx_val in Bx_val[1:numWires-1]])
+# C1_3 = GF(Cx_val[1:numWires-1])
+
+C1_1 = GF([ax_val * beta for ax_val in Ax_val_pub])
+C1_2 = GF([bx_val * alpha for bx_val in Bx_val_pub])
+C1_3 = GF(Cx_val_pub)
 
 C2 = Hx_val*Zx_val
 C3 = A*s + B*r - r*s*delta
 
 C = C0 *((C1_1 + C1_2 + C1_3).dot(C1) + C2) + C3
+# C = C0 *(C1.dot(C1_1 + C1_2 + C1_3) + C2) + C3
 
 lhs = A*B
 # rhs = alpha*beta
 
-rpub = GF([npRx[0], npRx[-1]]) 
-valpub = GF([VAL[0], VAL[-1]]) 
+# Ind_pub applied
+# rpub = GF([npRx[0], npRx[-1]]) 
+# valpub = GF([VAL[0], VAL[-1]]) 
+rpub = GF([npRx[i] for i in ind_pub_indexs]) 
+valpub = GF([VAL[i] for i in ind_pub_indexs])
 
 rhs = alpha*beta + gamma*rpub.dot(valpub) + C*delta
 
@@ -280,7 +322,9 @@ RHS = pairing(sigma2_1[0], sigma1_1[0])
 
 temp = None
 
-for i in [0, numWires-1]:
+# Ind_pub applied
+# for i in [0, numWires-1]:
+for i in ind_pub_indexs:
   temp = add(temp, multiply(sigma1_3[i], int(npRx[i])))
 
 RHS = (RHS * pairing(sigma2_1[1], temp)) * pairing(sigma2_1[2], proof_C)

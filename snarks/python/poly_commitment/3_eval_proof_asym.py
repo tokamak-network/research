@@ -1,6 +1,6 @@
 # https://risencrypto.github.io/Kate/
 from py_ecc.fields import bn128_FQ as FQ
-from py_ecc.bn128 import G1, multiply, add
+from py_ecc.bn128 import G1, G2, multiply, add, neg, pairing
 
 from functools import reduce
 
@@ -50,12 +50,8 @@ d = 10 #degree
 ###############
 
 _a = FQ(30) #toxic, it should be disappear after created, no one knows.
-RS = [multiply(G1, int(_a**i)) for i in range(d+1)] #Reference String, {a^0*G,a^1*G, ... ,a^d*G}, length is d+1
-
-#This is polynomial should be committed.
-#F(x) = f0*x^0 + f1*x + f2*x^2 + ... + fd*x^d
-#     = x + 2*x^2 + 3*x^3 + 4*x^4 + 5*x^5 + 6*x^6 + 7*x^7 + 8*x^8 + 9*x^9 + 10*x^10
-F = [i for i in range(d+1)]
+SRSg1 = [multiply(G1, int(_a**i)) for i in range(d+1)]
+SRSg2 = [multiply(G2, int(_a**i)) for i in range(d+1)]
 
 ################
 ## 2.1.Commit ##
@@ -85,38 +81,47 @@ Qx, remain = div_polys(numerator, denumerator)
 # print("Qx : ", Qx)
 # print("remainder : ", remain) # [0]
 
-# Cq = Q(a)*G
-rsQx = [multiply(RS[i], int(Qx[i])) for i in range(len(Qx))]
-Cq = reduce(add, rsQx)
+# Cq = Q(a)*G1
+srsG1Qx = [multiply(SRSg1[i], int(Qx[i])) for i in range(len(Qx))]
+Cq = reduce(add, srsG1Qx)
 
-# Cf = F(a)*G
-# Cf = sum([RS[i]*list(F)[i] for i in range(d+1)])
-rsF = [multiply(RS[i], int(F[i])) for i in range(len(F))]
-Cf = reduce(add, rsF)
+# Cf = F(a)*G1
+srsG1Fx = [multiply(SRSg1[i], int(F[i])) for i in range(len(F))]
+Cf = reduce(add, srsG1Fx)
 
-print("checking validity of Cq...")
-Cq_a = multiply(G1, int(eval_poly(Qx, _a)))
-print("Cq == Cq_a ? {}".format(Cq == Cq_a))
+# print("checking validity of Cq...")
+# Cq_a = multiply(G1, int(eval_poly(Qx, _a)))
+# print("Cq == Cq_a ? {}".format(Cq == Cq_a))
 
 ################
 ## 2.2.Verify ##
 ################
 
-# Checking, e(Cq, a*G-b*G) == e(Cf - c*G, G) : ?
+# Checking, e(Cq, a*G2-b*G2) == e(Cf - c*G1, G2) : ?
+
 # why?
 # Q(x) = (F(x) - c) / (x - b)
 # (a - b) * Q(a) = (F(a) - c), evaluated at a
-# (a - b) * Q(a) * G = (F(a) - c) * G
-# (a - b) * Cq = Cf - c * G, because Q(a)*G = Cq, F(a)*G = Cf
-# e((a - b)*Cq, G) = e(Cf - c*G, G)
-# e(Cq, (a-b)*G) = e(Cf - c*G, G), because e(aA, B) = e(A, aB)
-# so, e(Cq, (a*G - b*G)) = e(Cf - c*G, G)
+# (a - b) * Q(a) * G1 = (F(a) - c) * G1
+# (a - b) * Cq = Cf - c * G1, because Q(a)*G1 = Cq, F(a)*G1 = Cf
 
-#######################################################
-##### below is not working code                   #####
-##### this example is educational purpose only    #####
-#######################################################
+# e((a - b)*Cq, G2) = e(Cf - c*G1, G2)
+# e(Cq, (a-b)*G2) = e(Cf - c*G1, G2), because e(aA, B) = e(A, aB)
+# so, e(Cq, (a*G2 - b*G2)) = e(Cf - c*G1, G2)
 
-# LHS = Cq.weil_pairing(RS[1] - b*g, EC.order())
-# RHS = (Cf-c*g).weil_pairing(g, EC.order())
-# print("LHS == RHS ? {}".format(LHS == RHS))
+#building LHS
+aG2 = multiply(G2, int(_a))      #a*G2
+nbG2 = neg(multiply(G2, int(b))) #-b*G2
+aG2nbG2 = add(aG2, nbG2)         #a*G2-b*G2
+LHS = pairing(aG2nbG2, Cq)       #e(Cq, a*G2-b*G2)
+
+# print("LHS : ", LHS)
+
+#building RHS
+ncG1 = neg(multiply(G1, int(c))) #-c*G1
+cfncG1 = add(Cf, ncG1)           #Cf-c*G1
+RHS = pairing(G2, cfncG1)        #e(Cf-c*G1, G2)
+
+# print("RHS :",RHS)
+
+print("LHS == RHS ? {}".format(LHS == RHS))

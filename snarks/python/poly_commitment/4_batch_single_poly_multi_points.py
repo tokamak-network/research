@@ -74,12 +74,12 @@ t = d - 1 # t < d, number of values from verifier to prover
 # B = {b1, b2, b3, .. , bt}, values from verifier to prover before commit
 B = [FR(randint(0, FR.field_modulus-1)) for _ in range(t)]
 # B = [FR(b+1) for b in range(t)]
-print("B : {}".format(B))
+# print("B : {}".format(B))
 
 # C = {F(b1), F(b2), ... , F(bt)} = {c1, c2, .. , ct}
 # it will be given to verifier after commitment computation
 C = [eval_poly(Fx, b) for b in B]
-print("C : {}".format(C))
+# print("C : {}".format(C))
 
 # P(x) = (x-b1)(x-b2)..(x-bt)
 PxBeforeDist = [[-b, 1] for b in B] 

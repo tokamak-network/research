@@ -1,6 +1,11 @@
 # https://risencrypto.github.io/Kate/
 from py_ecc.fields import bn128_FQ as FQ
-from py_ecc.bn128 import G1, multiply, add
+from py_ecc.bn128 import G1, multiply, add, curve_order
+
+## IMPORTANT           ##
+## MUST USE FR, not FQ ##
+class FR(FQ):
+    field_modulus = curve_order
 
 d = 10 #degree
 
@@ -12,7 +17,7 @@ d = 10 #degree
 ## 1.0 SETUP ##
 ###############
 
-_a = FQ(30) #toxic, it should be disappear after created, no one knows.
+_a = FR(30) #toxic, it should be disappear after created, no one knows.
 RS = [multiply(G1, int(_a**i)) for i in range(d+1)] #Reference String, {a^0*G,a^1*G, ... ,a^d*G}, length is d+1
 
 # print("Reference string : ", RS)
@@ -20,7 +25,7 @@ RS = [multiply(G1, int(_a**i)) for i in range(d+1)] #Reference String, {a^0*G,a^
 #This is polynomial should be committed.
 #F(x) = f0*x^0 + f1*x + f2*x^2 + ... + fd*x^d
 #     = x + 2*x^2 + 3*x^3 + 4*x^4 + 5*x^5 + 6*x^6 + 7*x^7 + 8*x^8 + 9*x^9 + 10*x^10
-F = [FQ(i) for i in range(d+1)]
+F = [FR(i) for i in range(d+1)]
 print("target polynomial to be commited : ", F)
 
 ################
@@ -34,7 +39,7 @@ print("target polynomial to be commited : ", F)
 #This is polynomial should be committed.
 #F(x) = f0*x^0 + f1*x + f2*x^2 + ... + fd*x^d
 #     = x + 2*x^2 + 3*x^3 + 4*x^4 + 5*x^5 + 6*x^6 + 7*x^7 + 8*x^8 + 9*x^9 + 10*x^10
-F = [FQ(i) for i in range(d+1)]
+F = [FR(i) for i in range(d+1)]
 
 # This is a commitment from prover
 # Cf = F(a)*G

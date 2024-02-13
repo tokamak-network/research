@@ -1,8 +1,13 @@
 # https://risencrypto.github.io/Kate/
 from py_ecc.fields import bn128_FQ as FQ
-from py_ecc.bn128 import G1, G2, multiply, add, neg, pairing
+from py_ecc.bn128 import G1, G2, multiply, add, neg, pairing, curve_order
 
 from functools import reduce
+
+## IMPORTANT           ##
+## MUST USE FR, not FQ ##
+class FR(FQ):
+    field_modulus = curve_order
 
 # Multiply two polynomials
 def multiply_polys(a, b):
@@ -49,7 +54,7 @@ d = 10 #degree
 ## 2.0 SETUP ##
 ###############
 
-_a = FQ(30) #toxic, it should be disappear after created, no one knows.
+_a = FR(30) #toxic, it should be disappear after created, no one knows.
 SRSg1 = [multiply(G1, int(_a**i)) for i in range(d+1)]
 SRSg2 = [multiply(G2, int(_a**i)) for i in range(d+1)]
 
@@ -57,12 +62,12 @@ SRSg2 = [multiply(G2, int(_a**i)) for i in range(d+1)]
 ## 2.1.Commit ##
 ################
 
-b = FQ(11) #value from verifier to prover
+b = FR(11) #value from verifier to prover
 
 #This is polynomial should be committed.
 #F(x) = f0*x^0 + f1*x + f2*x^2 + ... + fd*x^d
 #     = x + 2*x^2 + 3*x^3 + 4*x^4 + 5*x^5 + 6*x^6 + 7*x^7 + 8*x^8 + 9*x^9 + 10*x^10
-F = [FQ(i) for i in range(d+1)]
+F = [FR(i) for i in range(d+1)]
 
 #F(b) = c, prover has to provide a proof of it to verifier
 c = eval_poly(F, b)

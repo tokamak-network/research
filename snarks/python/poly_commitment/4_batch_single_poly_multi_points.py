@@ -47,20 +47,20 @@ def subtract_polys(a, b):
 
 d = 10 #degree
 
-#######################################
-##### 2.FULL OPEN & VERIFY SCHEME #####
-#######################################
+########################################################
+## 4.MULTI POINTS, SINGLE POLY COMMIT & VERIFY SCHEME ##
+########################################################
 
 ###############
-## 2.0 SETUP ##
+## 4.0 Setup ##
 ###############
 
-_a = FR(30) #toxic, it should be disappear after created, no one knows.
+_a = FR(30) #toxic, it should be disappeared after created, no one knows forever.
 SRSg1 = [multiply(G1, int(_a**i)) for i in range(d+1)]
 SRSg2 = [multiply(G2, int(_a**i)) for i in range(d+1)]
 
 ################
-## 2.1.Commit ##
+## 4.1.Commit ##
 ################
 
 print("Commiting...")
@@ -121,7 +121,7 @@ print("")
 # print("Cf1 == Cf1_a ? {}".format(Cf1 == Cf1_a))
 
 ################
-## 2.2.Verify ##
+## 4.2.Verify ##
 ################
 
 print("Verifying...")

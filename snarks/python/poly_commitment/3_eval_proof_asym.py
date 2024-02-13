@@ -46,12 +46,12 @@ def subtract_polys(a, b):
 
 d = 10 #degree
 
-#######################################
-##### 2.FULL OPEN & VERIFY SCHEME #####
-#######################################
+#####################################################
+##### 3.PARTIAL OPEN & VERIFY SCHEME asymmetric #####
+#####################################################
 
 ###############
-## 2.0 SETUP ##
+## 3.0 SETUP ##
 ###############
 
 _a = FR(30) #toxic, it should be disappear after created, no one knows.
@@ -59,7 +59,7 @@ SRSg1 = [multiply(G1, int(_a**i)) for i in range(d+1)]
 SRSg2 = [multiply(G2, int(_a**i)) for i in range(d+1)]
 
 ################
-## 2.1.Commit ##
+## 3.1.Commit ##
 ################
 
 b = FR(11) #value from verifier to prover
@@ -99,7 +99,7 @@ Cf = reduce(add, srsG1Fx)
 # print("Cq == Cq_a ? {}".format(Cq == Cq_a))
 
 ################
-## 2.2.Verify ##
+## 3.2.Verify ##
 ################
 
 # Checking, e(Cq, a*G2-b*G2) == e(Cf - c*G1, G2) : ?

@@ -45,7 +45,31 @@ def add_polys(a, b, subtract=False):
 def subtract_polys(a, b):
     return add_polys(a, b, subtract=True)
 
-d = 10 #degree
+#point_loc : lagrange index
+#height : yi
+#x_vec : x vector, list type
+# l0 = (numerator / denumerator) * height
+def mk_single_lagrange_term(point_loc, height, x_vec):
+    denum = FR(1)
+    # calculating denumerator of single lagrange term
+    for i in range(len(x_vec)):
+        if i != point_loc:
+            denum *= x_vec[point_loc] - x_vec[i]
+    o = [height / denum]
+    #calculating numerator
+    for i in range(len(x_vec)):
+        if i != point_loc:
+            # (x-x_0)(x-x_1) ... (x-x_(j-1))(x_x_(j+1))..(x-x_k) <- 라그랑주 분자 계산
+            o = multiply_polys(o, [-x_vec[i], 1])
+    return o
+
+def lagrange_interpolation(x_vec, y_vec):
+    assert len(x_vec) == len(y_vec)
+    o = []
+    for i in range(len(x_vec)):
+        o = add_polys(o, mk_single_lagrange_term(i, y_vec[i], x_vec))
+    return o
+    
 
 ########################################################
 ## 4.MULTI POINTS, SINGLE POLY COMMIT & VERIFY SCHEME ##
@@ -54,6 +78,8 @@ d = 10 #degree
 ###############
 ## 4.0 Setup ##
 ###############
+
+d = 10 #degree
 
 _a = FR(30) #toxic, it should be disappeared after created, no one knows forever.
 SRSg1 = [multiply(G1, int(_a**i)) for i in range(d+1)]
@@ -150,9 +176,13 @@ print("Verifying...")
 # e(Cf1 - Cr1, G2) =? e(Cq1, P(a)*G2), bilinearity
 # so, e(Cf1 - Cr1, G2) =? e(Cq1, Cp2)
 
-# TODO : lagnrage interpolation using B,C to make R(x)
 # 1) checking for all R(bi) == ci
-isTrueList = [eval_poly(Rx, B[i]) == C[i] for i in range(t)]
+# a. Rx construction
+Rx_interp = lagrange_interpolation(B, C)
+print("checking Rx interpolation ? {}".format(Rx_interp == Rx))
+
+#1 b. R(bi) == ci
+isTrueList = [eval_poly(Rx_interp, B[i]) == C[i] for i in range(t)]
 verify1result = reduce(lambda x, y: x*y, isTrueList)
 
 print("## 1 Checking all R(bi) == ci ? {}".format(True == verify1result))

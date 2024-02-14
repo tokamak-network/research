@@ -190,7 +190,7 @@ print("## 1 Checking all R(bi) == ci ? {}".format(True == verify1result))
 # 2) Checking e(Cf1 - Cr1, G2) == e(Cq1, Cp2)
 
 #Cr1 = R(a)*G1
-srsG1Rx = [multiply(SRSg1[i], int(Rx[i])) for i in range(len(Rx))]
+srsG1Rx = [multiply(SRSg1[i], int(Rx_interp[i])) for i in range(len(Rx_interp))]
 Cr1 = reduce(add, srsG1Rx)
 
 #Cp2 = P(a)*G2
@@ -198,7 +198,7 @@ srsG2Px = [multiply(SRSg2[i], int(Px[i])) for i in range(len(Px))]
 Cp2 = reduce(add, srsG2Px)
 
 #checking Cr1
-Cr1_a = multiply(G1, int(eval_poly(Rx, _a)))
+Cr1_a = multiply(G1, int(eval_poly(Rx_interp, _a)))
 print("checking validity of Cr1... {}".format(Cr1 == Cr1_a))
 # print("Cr1 == Cr1_a ? {}".format(Cr1 == Cr1_a))
 

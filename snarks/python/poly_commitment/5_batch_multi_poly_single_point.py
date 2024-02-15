@@ -175,9 +175,8 @@ print("Verifying...")
 isTrueList = [ eval_poly(Ftxs[i], z) == openings_s[i] for i in range(t)]
 verify1result = reduce(lambda x, y: x*y, isTrueList)
 
-print("## 1.Checking all R(bi) == ci ? {}".format(True == verify1result))
+print("## 1.Checking all fi(z) == si ? {}".format(True == verify1result))
 
-#TODO : checking this
 # 2) Checking e(Ch_g1, a*G2-z*G2) == e(F-v, G2) 
 # where F = SumOf_(i = 1->t ){gamma^(i-1)*Cfi }
 #       v = SumOf_(i = 1->t ){gamma^(i-1)*si*G1 }

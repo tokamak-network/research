@@ -131,9 +131,13 @@ Hx = reduce(add_polys, Hx_list)
 #Commitemnt of Hx, Ch(g1 based)
 C_h_g1 = commit(SRSg1, Hx)
 
-# then, C_h_g1 and opennings_s is given to verifier
+#Commitment of fi, g1 based
+Cfi_g1 = [commit(SRSg1, fi) for fi in Ftxs]
+
+# then, Cfi_g1, C_h_g1, opennings_s are given to verifier
 print("## Commitment of h(x) : {}".format(C_h_g1))
-print("## Openning S : {}".format(openings_s))
+print("## Commitment of f(x) : {}".format(Cfi_g1))
+print("## Openning S : {} \n".format(openings_s))
 
 ################
 ## 5.2.Verify ##
@@ -149,7 +153,7 @@ print("Verifying...")
 
 # 1) Checking all fi(z) == si ? for all openings_s = {s1, s2, .. , si}
 # 2) Checking e(Ch_g1, a*G2-z*G2) == e(F-v, G2 ) 
-# where F = SumOf_(i = 1->t ){gamma^(i-1)*Cfi }
+# where F = SumOf_(i = 1->t ){gamma^(i-1)*fi*G1 }
 #       v = SumOf_(i = 1->t ){gamma^(i-1)*si*G1 }
 
 # why? 
@@ -172,7 +176,7 @@ print("Verifying...")
 # e(Ch_g1, a*G2 - z*G2) = e(F - v, G2)
 
 # 1) Checking all fi(z) == si ? for all openings_s = {s1, s2, .. , si}
-isTrueList = [ eval_poly(Ftxs[i], z) == openings_s[i] for i in range(t)]
+isTrueList = [eval_poly(Ftxs[i], z) == openings_s[i] for i in range(t)]
 verify1result = reduce(lambda x, y: x*y, isTrueList)
 
 print("## 1.Checking all fi(z) == si ? {}".format(True == verify1result))
@@ -186,7 +190,6 @@ aG2zG2 = add(multiply(G2, int(_a)), neg(multiply(G2, int(z))))
 LHS = pairing(aG2zG2, C_h_g1)
 
 #RHS building
-Cfi_g1 = [commit(SRSg1, fi) for fi in Ftxs] #Cfi
 F_list = [multiply(Cfi_g1[i-1], int(gamma**(i-1)))  for i in range(1, t+1)] #{gamma^(i-1)*Cfi }
 F_g1 = reduce(add, F_list) # F = SumOf_(i = 1->t ){gamma^(i-1)*Cfi }
 

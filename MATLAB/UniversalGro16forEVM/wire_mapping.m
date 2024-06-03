@@ -1,24 +1,26 @@
-function oplist_out=wire_mapping(oplist, op, op_pointer, stack_pt, d, a)
+function oplist_out=wire_mapping(op, stack_pt, d, a)
+global oplist op_pointer
 oplist(1).opcode='load';
 for i=1:d
     if stack_pt(i,1)==0
-        if isempty(oplist(1).outputs)
+        data=stack_pt(i,:);
+        if isempty(oplist(1).pt_outputs)
             checks=0;
         else
-            checks=ismember(oplist(1).outputs,stack_pt(i,:),'rows');
+            checks=ismember(oplist(1).pt_outputs,data,'rows');
         end
         if sum(checks)==0
-            oplist(1).outputs=[oplist(1).outputs; stack_pt(i,:)];
-            stack_pt(i,:)=[1 size(oplist(1).outputs,1) 1];
+            oplist(1).pt_outputs=[oplist(1).pt_outputs; data];
+            stack_pt(i,:)=[1 size(oplist(1).pt_outputs,1) data(3)];
         else
-            stack_pt(i,:)=[1 find(checks==1) 1];
+            stack_pt(i,:)=[1 find(checks==1) data(3)];
         end
     end
 end
 
 oplist(op_pointer).opcode=op;
-oplist(op_pointer).inputs=[oplist(op_pointer).inputs; stack_pt(1:d,:)];
-oplist(op_pointer).outputs=[ones(a,1)*op_pointer (1:a).' ones(a,1)];
+oplist(op_pointer).pt_inputs=[oplist(op_pointer).pt_inputs; stack_pt(1:d,:)];
+oplist(op_pointer).pt_outputs=[ones(a,1)*op_pointer (1:a).' ones(a,1)*32];
 oplist_out=oplist;
 end
 

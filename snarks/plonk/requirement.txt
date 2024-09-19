@@ -1,0 +1,10 @@
+cached-property==1.5.2
+cytoolz==0.12.3
+eth-hash==0.7.0
+eth-typing==5.0.0
+eth-utils==5.0.0
+hexbytes==1.2.1
+py-ecc==7.0.1
+pycryptodome==3.20.0
+toolz==0.12.1
+typing_extensions==4.12.2

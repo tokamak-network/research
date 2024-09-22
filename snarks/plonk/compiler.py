@@ -3,6 +3,14 @@
 
 from utils import *
 
+##함수 설명##
+## gate와 wire에 대한 polynomial : make_gate_polynomials() 
+## copy constraint : make_s_polynomials()
+
+## what is constraints?
+## r1cs랑 비교할만한 circom 코드  https://github.com/fluidex/plonkit/blob/master/test/circuits/simple/circuit.circom
+## 프로그래밍 언어 단계부터 constraints와 관련된 부분을 "별도로" 정의해야함.
+
 # Outputs the label (an inner-field element) representing a given
 # (section, index) pair. Expects section = 1 for left, 2 right, 3 output
 def S_position_to_f_inner(group_order, index, section):
@@ -65,6 +73,20 @@ def get_product_key(key1, key2):
 # Note that this is a recursive algo, so the input can be a mix of tokens and
 # mapping expressions
 #
+
+## 함수 설명 ##
+## 입력되는 모든 문자열은 분해되어서 simplify를 통과한다고 보면됨(재귀함수)
+## 파라미터는 배열로 분해된 연산이 보통 들어옴 ["a", "+"", "b"] 등  
+## 함수에 "단일문자"가 들어가면(a~z) -> {"a" : 1 or -1} 형태로 나옴
+## 함수에 "연산문자열(문자 연산 문자)"이 들어가면 조건문(+,-,*)에 걸리고,
+##   L : "단일문자" 조건에 걸려서 {"a" : 1 or -1 } 형태가 나옴
+##   R : "단일문자" 조건에 걸려서 {"b" : 1 or -1 } 형태가 나옴
+##    x: L.get(x, 0) + R.get(x, 0) for x in set(L.keys()).union(R.keys())
+##
+## 더하기/빼기 : {"a" : 숫자}
+## 곱하기(두문자) :  {"a*b": 숫자}
+## 상수더하기 : {"": 숫자}
+## 복합 더하기/빼기/곱하기 : {"a" : 숫자, "a*b" : 숫자, "" : 숫자}
 def simplify(exprs, first_is_negative=False):
     # Splits by + and - first, then *, to follow order of operations
     # The first_is_negative flag helps us correctly interpret expressions
@@ -88,10 +110,13 @@ def simplify(exprs, first_is_negative=False):
         for k1 in L.keys():
             for k2 in R.keys():
                 o[get_product_key(k1, k2)] = L[k1] * R[k2]
+                ## get_product_key['a','b'] == "a*b"
+                ## L[k1] * R[k2] == 1 * 1 == 1, so
+                ## o = {"a*b" : 1}
         return o
     elif len(exprs) > 1:
         raise Exception("No ops, expected sub-expr to be a unit: {}"
-                        .format(expr))
+                        .format(exprs))
     elif exprs[0][0] == '-':
         return simplify([exprs[0][1:]], not first_is_negative)
     elif exprs[0].isnumeric():
@@ -121,12 +146,13 @@ def simplify(exprs, first_is_negative=False):
 # e <== a + b * c * d          # Multiplicative degree > 2
 #
 def eq_to_coeffs(eq):
+    ## if 'c <== a * b' in,
     tokens = eq.rstrip('\n').split(' ')
     if tokens[1] in ('<==', '==='):
         # First token is the output variable
-        out = tokens[0]
+        out = tokens[0] ## out = c
         # Convert the expression to coefficient map form
-        coeffs = simplify(tokens[2:])
+        coeffs = simplify(tokens[2:]) 
         # Handle the "-x === a * b" case
         if out[0] == '-':
             out = out[1:]
@@ -134,12 +160,14 @@ def eq_to_coeffs(eq):
         # Check out variable name validity
         if not is_valid_variable_name(out):
             raise Exception("Invalid out variable name: {}".format(out))
+        
         # Gather list of variables used in the expression
         variables = []
         for t in tokens[2:]:
             var = t.lstrip('-')
             if is_valid_variable_name(var) and var not in variables:
                 variables.append(var)
+        
         # Construct the list of allowed coefficients 
         allowed_coeffs = variables + ['', '$output_coeff']
         if len(variables) == 0:
@@ -156,6 +184,7 @@ def eq_to_coeffs(eq):
             if key not in allowed_coeffs:
                 raise Exception("Disallowed multiplication: {}".format(key))
         # Return output
+        ## Return => (variables를 심플하게 뽑음, simplify())
         return variables + [None] * (2 - len(variables)) + [out], coeffs
     elif tokens[1] == 'public':
         return (
@@ -222,6 +251,7 @@ def make_verification_key(setup, group_order, code):
     if len(eqs) > group_order:
         raise Exception("Group order too small")
     L, R, M, O, C = make_gate_polynomials(group_order, eqs)
+    # print("L : {}".format(L))
     S1, S2, S3 = make_s_polynomials(group_order, [v for (v, c) in eqs])
     return {
         "Qm": evaluations_to_point(setup, group_order, M),
